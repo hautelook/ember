@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.2acbc521
+ * @version   1.8.0-beta.1+metal-views.d476ff44
  */
 
 (function() {
@@ -12897,12 +12897,11 @@ define("ember-metal-views/tests/main_test.jshint",
     });
   });
 define("ember-metal-views/tests/test_helpers",
-  ["morph","ember-metal-views","exports"],
-  function(__dependency1__, __dependency2__, __exports__) {
+  ["ember-metal-views","exports"],
+  function(__dependency1__, __exports__) {
     "use strict";
     /*globals Node */
-    var Morph = __dependency1__.Morph;
-    var Renderer = __dependency2__.Renderer;
+    var Renderer = __dependency1__.Renderer;
 
     var renderer;
 
@@ -12950,7 +12949,7 @@ define("ember-metal-views/tests/test_helpers",
         }
       }
       if (view.childViews) {
-        view._childViewsMorph = new Morph(el, null, null);
+        view._childViewsMorph = this._dom.createMorph(el, null, null);
       } else if (view.textContent) {
         el.textContent = view.textContent;
       } else if (view.innerHTML) {
