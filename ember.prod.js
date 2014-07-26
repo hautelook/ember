@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.d476ff44
+ * @version   1.8.0-beta.1+metal-views.0ad251d7
  */
 
 (function() {
@@ -9757,23 +9757,19 @@ define("ember-handlebars/views/handlebars_bound_view",
     __exports__.SimpleHandlebarsView = SimpleHandlebarsView;
   });
 define("ember-handlebars/views/metamorph_view",
-  ["ember-metal/core","ember-metal/property_get","ember-metal/property_set","ember-views/views/core_view","ember-views/views/view","ember-metal/mixin","ember-metal/run_loop","exports"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __exports__) {
+  ["ember-metal/core","ember-views/views/core_view","ember-views/views/view","ember-metal/mixin","ember-metal/run_loop","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __exports__) {
     "use strict";
     /* global Metamorph:true */
 
     /*jshint newcap:false*/
     var Ember = __dependency1__["default"];
     // Ember.deprecate
-    // var emberDeprecate = Ember.deprecate;
 
-    var get = __dependency2__.get;
-    var set = __dependency3__["default"];
-
-    var CoreView = __dependency4__["default"];
-    var View = __dependency5__["default"];
-    var Mixin = __dependency6__.Mixin;
-    var run = __dependency7__["default"];
+    var CoreView = __dependency2__["default"];
+    var View = __dependency3__["default"];
+    var Mixin = __dependency4__.Mixin;
+    var run = __dependency5__["default"];
 
     /**
     @module ember
@@ -12705,7 +12701,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.d476ff44
+      @version 1.8.0-beta.1+metal-views.0ad251d7
     */
 
     if ('undefined' === typeof Ember) {
@@ -12732,10 +12728,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.d476ff44'
+      @default '1.8.0-beta.1+metal-views.0ad251d7'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.d476ff44';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.0ad251d7';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`
@@ -36600,20 +36596,19 @@ define("ember-views/system/render_buffer",
     })();
 
     /**
-      `Ember.RenderBuffer` gathers information regarding the view and generates the
-      final representation. `Ember.RenderBuffer` will generate HTML which can be pushed
+      `Ember.renderBuffer` gathers information regarding the view and generates the
+      final representation. `Ember.renderBuffer` will generate HTML which can be pushed
       to the DOM.
 
        ```javascript
-       var buffer = Ember.RenderBuffer('div');
+       var buffer = Ember.renderBuffer('div');
       ```
 
-      @class RenderBuffer
+      @method renderBuffer
       @namespace Ember
-      @constructor
       @param {String} tagName tag name (such as 'div' or 'p') used for the buffer
     */
-    __exports__["default"] = function RenderBuffer(tagName) {
+    __exports__["default"] = function renderBuffer(tagName) {
       return new _RenderBuffer(tagName); // jshint ignore:line
     }
 
@@ -36892,7 +36887,7 @@ define("ember-views/system/render_buffer",
       },
 
       generateElement: function() {
-        var tagName = this.tagName, // pop since we don't need to close
+        var tagName = this.tagName,
             id = this.elementId,
             classes = this.classes,
             attrs = this.elementAttributes,
@@ -38435,8 +38430,8 @@ define("ember-views/views/container_view",
     __exports__["default"] = ContainerView;
   });
 define("ember-views/views/core_view",
-  ["ember-views/system/renderer","ember-views/views/states","ember-runtime/system/object","ember-runtime/mixins/evented","ember-runtime/mixins/action_handler","ember-metal/properties","ember-metal/property_get","ember-metal/property_set","ember-metal/computed","ember-metal/utils","ember-metal/instrumentation","ember-views/system/render_buffer","exports"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __exports__) {
+  ["ember-views/system/renderer","ember-views/views/states","ember-runtime/system/object","ember-runtime/mixins/evented","ember-runtime/mixins/action_handler","ember-metal/properties","ember-metal/property_get","ember-metal/property_set","ember-metal/computed","ember-metal/utils","ember-metal/instrumentation","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __exports__) {
     "use strict";
     var Rerender = __dependency1__["default"];
 
@@ -38454,9 +38449,6 @@ define("ember-views/views/core_view",
     var typeOf = __dependency10__.typeOf;
 
     var instrument = __dependency11__.instrument;
-
-
-    var renderBuffer = __dependency12__["default"];
 
     /**
       `Ember.CoreView` is an abstract class that exists to give view-like behavior
