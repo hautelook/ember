@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.0ad251d7
+ * @version   1.8.0-beta.1+metal-views.9b0cebb5
  */
 
 (function() {
@@ -12997,7 +12997,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.0ad251d7
+      @version 1.8.0-beta.1+metal-views.9b0cebb5
     */
 
     if ('undefined' === typeof Ember) {
@@ -13024,10 +13024,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.0ad251d7'
+      @default '1.8.0-beta.1+metal-views.9b0cebb5'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.0ad251d7';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.9b0cebb5';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`
@@ -37478,7 +37478,7 @@ define("ember-views/system/renderer",
             view._childViewsMorph = this._dom.createMorph(element, start, end);
           }
         } else {
-          view._childViewsMorph = this._dom.createMorph(element, null, null);
+          view._childViewsMorph = this._dom.createMorph(element, element.lastChild, null);
         }
         return element;
       };

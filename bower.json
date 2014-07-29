@@ -1,6 +1,6 @@
 {
   "name": "ember",
-  "version": "1.8.0-beta.1+metal-views.0ad251d7",
+  "version": "1.8.0-beta.1+metal-views.9b0cebb5",
   "main": [
     "./ember.js"
   ],
