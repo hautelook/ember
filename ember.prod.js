@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.3bd6f52d
+ * @version   1.8.0-beta.1+metal-views.dbdfd125
  */
 
 (function() {
@@ -12826,7 +12826,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.3bd6f52d
+      @version 1.8.0-beta.1+metal-views.dbdfd125
     */
 
     if ('undefined' === typeof Ember) {
@@ -12853,10 +12853,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.3bd6f52d'
+      @default '1.8.0-beta.1+metal-views.dbdfd125'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.3bd6f52d';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.dbdfd125';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`
@@ -37929,7 +37929,7 @@ define("ember-views/system/renderer",
           return view.createChildViewsMorph(_element);
         }
         var element = _element;
-        if (view.isVirtual) {
+        if (view.tagName === '') {
           if (view._morph) {
             view._childViewsMorph = view._morph;
           } else {
@@ -37962,7 +37962,7 @@ define("ember-views/system/renderer",
           view.beforeRender(buffer);
         }
 
-        if (!view.isVirtual) {
+        if (view.tagName !== '') {
           if (view.applyAttributesToBuffer) {
             view.applyAttributesToBuffer(buffer);
           }
@@ -41636,7 +41636,9 @@ define("ember-views/views/view",
         @private
       */
       init: function() {
-        this.elementId = this.elementId || guidFor(this);
+        if (!this.isVirtual && !this.elementId) {
+          this.elementId = guidFor(this);
+        }
 
         this._super();
 
