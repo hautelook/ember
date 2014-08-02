@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.10ac07be
+ * @version   1.8.0-beta.1+metal-views.3bd6f52d
  */
 
 (function() {
@@ -9566,6 +9566,7 @@ define("ember-handlebars/views/handlebars_bound_view",
         var value = this.normalizedValue();
         // doesn't diff SafeString instances
         if (value !== this._lastNormalizedValue) {
+          this._lastNormalizedValue = value;
           this._morph.update(value);
         }
       },
@@ -12825,7 +12826,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.10ac07be
+      @version 1.8.0-beta.1+metal-views.3bd6f52d
     */
 
     if ('undefined' === typeof Ember) {
@@ -12852,10 +12853,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.10ac07be'
+      @default '1.8.0-beta.1+metal-views.3bd6f52d'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.10ac07be';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.3bd6f52d';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`

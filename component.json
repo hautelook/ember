@@ -1,7 +1,7 @@
 {
   "name": "ember",
   "repo": "components/ember",
-  "version": "1.8.0-beta.1+metal-views.10ac07be",
+  "version": "1.8.0-beta.1+metal-views.3bd6f52d",
   "main": "ember.js",
   "scripts": [
     "ember.js"
