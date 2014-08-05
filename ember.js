@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.dbdfd125
+ * @version   1.8.0-beta.1+metal-views.df7b2ebe
  */
 
 (function() {
@@ -13123,7 +13123,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.dbdfd125
+      @version 1.8.0-beta.1+metal-views.df7b2ebe
     */
 
     if ('undefined' === typeof Ember) {
@@ -13150,10 +13150,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.dbdfd125'
+      @default '1.8.0-beta.1+metal-views.df7b2ebe'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.dbdfd125';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.df7b2ebe';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`
@@ -40203,7 +40203,9 @@ define("ember-views/views/states/in_buffer",
 
         //childView.renderToBuffer(buffer); // done later on the render loop
 
-        buffer.pushChildView(childView);
+        if (!childView._morph) {
+          buffer.pushChildView(childView);
+        }
 
         view.propertyDidChange('childViews');
 
