@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.f1489f23
+ * @version   1.8.0-beta.1+metal-views.9f295308
  */
 
 (function() {
@@ -12827,7 +12827,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.f1489f23
+      @version 1.8.0-beta.1+metal-views.9f295308
     */
 
     if ('undefined' === typeof Ember) {
@@ -12854,10 +12854,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.f1489f23'
+      @default '1.8.0-beta.1+metal-views.9f295308'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.f1489f23';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.9f295308';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`
@@ -36876,8 +36876,8 @@ define("ember-testing/test",
     __exports__["default"] = Test;
   });
 define("ember-views",
-  ["ember-runtime","ember-views/system/jquery","ember-views/system/utils","ember-views/system/render_buffer","ember-views/system/ext","ember-views/views/states","ember-views/views/core_view","ember-views/views/view","ember-views/views/view_collection","ember-views/views/container_view","ember-views/views/collection_view","ember-views/views/component","ember-views/system/event_dispatcher","ember-views/mixins/view_target_action_support","exports"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __exports__) {
+  ["ember-runtime","ember-views/system/jquery","ember-views/system/utils","ember-views/system/render_buffer","ember-views/system/ext","ember-views/views/states","ember-views/views/core_view","ember-views/views/view","ember-views/views/container_view","ember-views/views/collection_view","ember-views/views/component","ember-views/system/event_dispatcher","ember-views/mixins/view_target_action_support","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __exports__) {
     "use strict";
     /**
     Ember Views
@@ -36900,13 +36900,12 @@ define("ember-views",
 
     var CoreView = __dependency7__["default"];
     var View = __dependency8__["default"];
-    var ViewCollection = __dependency9__["default"];
-    var ContainerView = __dependency10__["default"];
-    var CollectionView = __dependency11__["default"];
-    var Component = __dependency12__["default"];
+    var ContainerView = __dependency9__["default"];
+    var CollectionView = __dependency10__["default"];
+    var Component = __dependency11__["default"];
 
-    var EventDispatcher = __dependency13__["default"];
-    var ViewTargetActionSupport = __dependency14__["default"];
+    var EventDispatcher = __dependency12__["default"];
+    var ViewTargetActionSupport = __dependency13__["default"];
     // END IMPORTS
 
     /**
@@ -36931,7 +36930,6 @@ define("ember-views",
     Ember.View.states = states;
     Ember.View.cloneStates = cloneStates;
 
-    Ember._ViewCollection = ViewCollection;
     Ember.ContainerView = ContainerView;
     Ember.CollectionView = CollectionView;
     Ember.Component = Component;
@@ -38933,8 +38931,8 @@ define("ember-views/views/component",
     __exports__["default"] = Component;
   });
 define("ember-views/views/container_view",
-  ["ember-metal/core","ember-metal/merge","ember-runtime/mixins/mutable_array","ember-metal/property_get","ember-metal/property_set","ember-views/views/view","ember-views/views/view_collection","ember-views/views/states","ember-metal/error","ember-metal/enumerable_utils","ember-metal/computed","ember-metal/run_loop","ember-metal/properties","ember-views/system/render_buffer","ember-metal/mixin","ember-runtime/system/native_array","exports"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__, __dependency16__, __exports__) {
+  ["ember-metal/core","ember-metal/merge","ember-runtime/mixins/mutable_array","ember-metal/property_get","ember-metal/property_set","ember-views/views/view","ember-views/views/states","ember-metal/error","ember-metal/enumerable_utils","ember-metal/computed","ember-metal/run_loop","ember-metal/properties","ember-views/system/render_buffer","ember-metal/mixin","ember-runtime/system/native_array","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__, __exports__) {
     "use strict";
     var Ember = __dependency1__["default"];
     // Ember.assert, Ember.K
@@ -38945,22 +38943,21 @@ define("ember-views/views/container_view",
     var set = __dependency5__.set;
 
     var View = __dependency6__["default"];
-    var ViewCollection = __dependency7__["default"];
 
-    var cloneStates = __dependency8__.cloneStates;
-    var EmberViewStates = __dependency8__.states;
+    var cloneStates = __dependency7__.cloneStates;
+    var EmberViewStates = __dependency7__.states;
 
-    var EmberError = __dependency9__["default"];
+    var EmberError = __dependency8__["default"];
 
-    var forEach = __dependency10__.forEach;
+    var forEach = __dependency9__.forEach;
 
-    var computed = __dependency11__.computed;
-    var run = __dependency12__["default"];
-    var defineProperty = __dependency13__.defineProperty;
-    var renderBuffer = __dependency14__["default"];
-    var observer = __dependency15__.observer;
-    var beforeObserver = __dependency15__.beforeObserver;
-    var emberA = __dependency16__.A;
+    var computed = __dependency10__.computed;
+    var run = __dependency11__["default"];
+    var defineProperty = __dependency12__.defineProperty;
+    var renderBuffer = __dependency13__["default"];
+    var observer = __dependency14__.observer;
+    var beforeObserver = __dependency14__.beforeObserver;
+    var emberA = __dependency15__.A;
 
     /**
     @module ember
@@ -39868,8 +39865,8 @@ define("ember-views/views/states/pre_render",
     __exports__["default"] = preRender;
   });
 define("ember-views/views/view",
-  ["ember-metal/core","ember-runtime/mixins/evented","ember-runtime/system/object","ember-metal/error","ember-metal/property_get","ember-metal/property_set","ember-metal/set_properties","ember-metal/run_loop","ember-metal/observer","ember-metal/properties","ember-metal/utils","ember-metal/computed","ember-metal/mixin","ember-metal/is_none","ember-runtime/system/native_array","ember-runtime/system/string","ember-metal/enumerable_utils","ember-runtime/copy","ember-metal/binding","ember-metal/property_events","ember-views/system/jquery","ember-views/system/ext","ember-views/views/core_view","ember-views/views/view_collection","exports"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__, __dependency16__, __dependency17__, __dependency18__, __dependency19__, __dependency20__, __dependency21__, __dependency22__, __dependency23__, __dependency24__, __exports__) {
+  ["ember-metal/core","ember-runtime/mixins/evented","ember-runtime/system/object","ember-metal/error","ember-metal/property_get","ember-metal/property_set","ember-metal/set_properties","ember-metal/run_loop","ember-metal/observer","ember-metal/properties","ember-metal/utils","ember-metal/computed","ember-metal/mixin","ember-metal/is_none","ember-runtime/system/native_array","ember-runtime/system/string","ember-metal/enumerable_utils","ember-runtime/copy","ember-metal/binding","ember-metal/property_events","ember-views/system/jquery","ember-views/system/ext","ember-views/views/core_view","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__, __dependency16__, __dependency17__, __dependency18__, __dependency19__, __dependency20__, __dependency21__, __dependency22__, __dependency23__, __exports__) {
     "use strict";
     // Ember.assert, Ember.deprecate, Ember.warn, Ember.TEMPLATES,
     // Ember.K, jQuery, Ember.lookup,
@@ -39918,7 +39915,6 @@ define("ember-views/views/view",
      // for the side effect of extending Ember.run.queues
 
     var CoreView = __dependency23__["default"];
-    var ViewCollection = __dependency24__["default"];
 
     /**
     @module ember
@@ -41375,19 +41371,6 @@ define("ember-views/views/view",
         }
       },
 
-      viewHierarchyCollection: function() {
-        var currentView, viewCollection = new ViewCollection([this]);
-
-        for (var i = 0; i < viewCollection.length; i++) {
-          currentView = viewCollection.objectAt(i);
-          if (currentView._childViews) {
-            viewCollection.push.apply(viewCollection, currentView._childViews);
-          }
-        }
-
-        return viewCollection;
-      },
-
       /**
         Destroys any existing element along with the element for any child views
         as well. If the view does not currently have a element, then this method
@@ -41421,24 +41404,6 @@ define("ember-views/views/view",
         @event willDestroyElement
       */
       willDestroyElement: Ember.K,
-
-      /**
-        Triggers the `willDestroyElement` event (which invokes the
-        `willDestroyElement()` method if it exists) on this view and all child
-        views.
-
-        Before triggering `willDestroyElement`, it first triggers the
-        `willClearRender` event recursively.
-
-        @method _notifyWillDestroyElement
-        @private
-      */
-      _notifyWillDestroyElement: function() {
-        var viewCollection = this.viewHierarchyCollection();
-        viewCollection.trigger('willClearRender');
-        viewCollection.trigger('willDestroyElement');
-        return viewCollection;
-      },
 
       /**
         Called when the parentView property has changed.
@@ -42110,74 +42075,6 @@ define("ember-views/views/view",
     };
 
     __exports__["default"] = View;
-  });
-define("ember-views/views/view_collection",
-  ["ember-metal/enumerable_utils","exports"],
-  function(__dependency1__, __exports__) {
-    "use strict";
-    var forEach = __dependency1__.forEach;
-
-    function ViewCollection(initialViews) {
-      var views = this.views = initialViews || [];
-      this.length = views.length;
-    }
-
-    ViewCollection.prototype = {
-      length: 0,
-
-      trigger: function(eventName) {
-        var views = this.views, view;
-        for (var i = 0, l = views.length; i < l; i++) {
-          view = views[i];
-          if (view.trigger) { view.trigger(eventName); }
-        }
-      },
-
-      triggerRecursively: function(eventName) {
-        var views = this.views;
-        for (var i = 0, l = views.length; i < l; i++) {
-          views[i].triggerRecursively(eventName);
-        }
-      },
-
-      invokeRecursively: function(fn) {
-        var views = this.views, view;
-
-        for (var i = 0, l = views.length; i < l; i++) {
-          view = views[i];
-          fn(view);
-        }
-      },
-
-      transitionTo: function(state, children) {
-        var views = this.views;
-        for (var i = 0, l = views.length; i < l; i++) {
-          views[i]._transitionTo(state, children);
-        }
-      },
-
-      push: function() {
-        this.length += arguments.length;
-        var views = this.views;
-        return views.push.apply(views, arguments);
-      },
-
-      objectAt: function(idx) {
-        return this.views[idx];
-      },
-
-      forEach: function(callback) {
-        var views = this.views;
-        return forEach(views, callback);
-      },
-
-      clear: function() {
-        this.length = 0;
-        this.views.length = 0;
-      }
-    };
-
-    __exports__["default"] = ViewCollection;
   });
 define("ember",
   ["ember-metal","ember-runtime","ember-handlebars","ember-views","ember-routing","ember-routing-handlebars","ember-application","ember-extension-support"],
