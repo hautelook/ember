@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.5fb9ff1c
+ * @version   1.8.0-beta.1+metal-views.f1489f23
  */
 
 (function() {
@@ -9982,12 +9982,16 @@ define("ember-metal-views/renderer",
       if (view._uuid === undefined) {
         view._uuid = ++this._uuid;
         view._renderer = this;
-      }
+      } // else assert(view._renderer === this)
       return view._uuid;
     };
 
     Renderer.prototype.scheduleInsert =
-      function Renderer_scheduleInsert(view) {
+      function Renderer_scheduleInsert(view, morph) {
+        if (view._morph || view._elementCreated) {
+          throw new Error("You can't insert a View that has already been rendered");
+        }
+        view._morph = morph;
         var viewId = this.uuid(view);
         this._inserts[viewId] = this.scheduleRender(this, function() {
           this._inserts[viewId] = null;
@@ -9997,22 +10001,19 @@ define("ember-metal-views/renderer",
 
     Renderer.prototype.appendTo =
       function Renderer_appendTo(view, target) {
-        // TODO check view state, cancel existing insertion.
         // TODO use dom helper for creating this morph.
         var start = document.createTextNode('');
         var end = document.createTextNode('');
         target.appendChild(start);
         target.appendChild(end);
-        view._morph = this._dom.createMorph(target, start, end);
-
-        this.scheduleInsert(view);
+        var morph = this._dom.createMorph(target, start, end);
+        this.scheduleInsert(view, morph);
       };
 
     Renderer.prototype.replaceIn =
       function Renderer_replaceIn(view, target) {
-        view._morph = this._dom.createMorph(target, null, null);
-
-        this.scheduleInsert(view);
+        var morph = this._dom.createMorph(target, null, null);
+        this.scheduleInsert(view, morph);
       };
 
     function Renderer_remove(_view, shouldDestroy, reset) {
@@ -12826,7 +12827,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.5fb9ff1c
+      @version 1.8.0-beta.1+metal-views.f1489f23
     */
 
     if ('undefined' === typeof Ember) {
@@ -12853,10 +12854,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.5fb9ff1c'
+      @default '1.8.0-beta.1+metal-views.f1489f23'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.5fb9ff1c';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.f1489f23';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`
@@ -39923,18 +39924,6 @@ define("ember-views/views/view",
     @module ember
     @submodule ember-views
     */
-
-    var ContainerView;
-
-    function nullViewsBuffer(view) {
-      view.buffer = null;
-
-    }
-
-    function clearCachedElement(view) {
-      meta(view).cache.element = undefined;
-    }
-
     var childViewsProperty = computed(function() {
       var childViews = this._childViews, ret = emberA(), view = this;
 
@@ -41867,10 +41856,6 @@ define("ember-views/views/view",
         }
 
         return false;
-      },
-
-      clearBuffer: function() {
-        this.invokeRecursively(nullViewsBuffer);
       },
       transitionTo: function(state, children) {
                 this._transitionTo(state, children);
