@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.9f295308
+ * @version   1.8.0-beta.1+metal-views.aef8ed9b
  */
 
 (function() {
@@ -12827,7 +12827,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.9f295308
+      @version 1.8.0-beta.1+metal-views.aef8ed9b
     */
 
     if ('undefined' === typeof Ember) {
@@ -12854,10 +12854,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.9f295308'
+      @default '1.8.0-beta.1+metal-views.aef8ed9b'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.9f295308';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.aef8ed9b';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`
@@ -37885,17 +37885,10 @@ define("ember-views/system/renderer",
     var set = __dependency5__.set;
 
     function EmberRenderer() {
-      EmberRenderer["super"].call(this);
+      Renderer.call(this);
     }
-    EmberRenderer["super"] = Renderer;
-    EmberRenderer.prototype = Object.create(Renderer.prototype, {
-      constructor: {
-        value: EmberRenderer,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
+    EmberRenderer.prototype = create(Renderer.prototype);
+    EmberRenderer.prototype.constructor = EmberRenderer;
 
     var BAD_TAG_NAME_TEST_REGEXP = /[^a-zA-Z0-9\-]/;
     var BAD_TAG_NAME_REPLACE_REGEXP = /[^a-zA-Z0-9\-]/g;
@@ -37983,7 +37976,11 @@ define("ember-views/system/renderer",
         }
 
         view.buffer = null;
-        set(view, 'element', element);
+        if (element && element.nodeType === 1) {
+          // We have hooks, we shouldn't make element observable
+          // consider just doing view.element = element
+          set(view, 'element', element);
+        }
         return element;
       };
 
@@ -38015,14 +38012,14 @@ define("ember-views/system/renderer",
       }
       if (view.trigger) { view.trigger('didInsertElement'); }
     }; // inDOM // placed into DOM
-    Renderer.prototype.willRemoveElement = function (view) {
-      // removed from DOM  willDestroyElement currently paired with didInsertElement
-      if (view.trigger) { view.trigger('willDestroyElement'); }
-    };
+
+    Renderer.prototype.willRemoveElement = function (view) {};
+
     Renderer.prototype.willDestroyElement = function (view) {
-      // willClearRender (currently balanced with render) this is now paired with createElement
+      if (view.trigger) { view.trigger('willDestroyElement'); }
       if (view.trigger) { view.trigger('willClearRender'); }
     };
+
     Renderer.prototype.didDestroyElement = function (view) {
       set(view, 'element', null);
       if (view._transitionTo) {
@@ -39494,8 +39491,6 @@ define("ember-views/views/core_view",
       },
 
       clearRenderedChildren: Ember.K,
-      triggerRecursively: Ember.K,
-      invokeRecursively: Ember.K,
       _transitionTo: Ember.K,
       destroyElement: Ember.K
     });
@@ -41324,52 +41319,6 @@ define("ember-views/views/view",
         @event willClearRender
       */
       willClearRender: Ember.K,
-
-      /**
-        Run this callback on the current view (unless includeSelf is false) and recursively on child views.
-
-        @method invokeRecursively
-        @param fn {Function}
-        @param includeSelf {Boolean} Includes itself if true.
-        @private
-      */
-      invokeRecursively: function(fn, includeSelf) {
-        var childViews = (includeSelf === false) ? this._childViews : [this];
-        var currentViews, view, currentChildViews;
-
-        while (childViews.length) {
-          currentViews = childViews.slice();
-          childViews = [];
-
-          for (var i=0, l=currentViews.length; i<l; i++) {
-            view = currentViews[i];
-            currentChildViews = view._childViews ? view._childViews.slice(0) : null;
-            fn(view);
-            if (currentChildViews) {
-              childViews.push.apply(childViews, currentChildViews);
-            }
-          }
-        }
-      },
-
-      triggerRecursively: function(eventName) {
-        var childViews = [this], currentViews, view, currentChildViews;
-
-        while (childViews.length) {
-          currentViews = childViews.slice();
-          childViews = [];
-
-          for (var i=0, l=currentViews.length; i<l; i++) {
-            view = currentViews[i];
-            currentChildViews = view._childViews ? view._childViews.slice(0) : null;
-            if (view.trigger) { view.trigger(eventName); }
-            if (currentChildViews) {
-              childViews.push.apply(childViews, currentChildViews);
-            }
-
-          }
-        }
-      },
 
       /**
         Destroys any existing element along with the element for any child views
