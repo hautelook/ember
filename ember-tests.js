@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.74b7c44e
+ * @version   1.8.0-beta.1+metal-views.6ff76c33
  */
 
 (function() {
@@ -13,7 +13,7 @@ var define, requireModule, require, requirejs, Ember;
 
 (function() {
   Ember = this.Ember = this.Ember || {};
-  if (typeof Ember === 'undefined') { Ember = {} };
+  if (typeof Ember === 'undefined') { Ember = {}; };
 
   if (typeof Ember.__loader === 'undefined') {
     var registry = {}, seen = {};
@@ -30,11 +30,11 @@ var define, requireModule, require, requirejs, Ember;
         throw new Error("Could not find module " + name);
       }
 
-      var mod = registry[name],
-      deps = mod.deps,
-      callback = mod.callback,
-      reified = [],
-      exports;
+      var mod = registry[name];
+      var deps = mod.deps;
+      var callback = mod.callback;
+      var reified = [];
+      var exports;
 
       for (var i=0, l=deps.length; i<l; i++) {
         if (deps[i] === 'exports') {
@@ -102,18 +102,6 @@ define("container/tests/container_helper",
       }
     };
 
-    var o_create = Object.create || (function(){
-      function F(){}
-
-      return function(o) {
-        if (arguments.length !== 1) {
-          throw new Ember.Error('Object.create implementation only accepts one parameter.');
-        }
-        F.prototype = o;
-        return new F();
-      };
-    }());
-
     var guids = 0;
 
     var passedOptions;
@@ -174,7 +162,6 @@ define("container/tests/container_helper",
     };
 
     __exports__.factory = factory;
-    __exports__.o_create = o_create;
     __exports__.setProperties = setProperties;
   });
 define("container/tests/container_helper.jshint",
@@ -191,7 +178,6 @@ define("container/tests/container_test",
   function(__dependency1__, __dependency2__) {
     "use strict";
     var factory = __dependency1__.factory;
-    var o_create = __dependency1__.o_create;
     var setProperties = __dependency1__.setProperties;
 
     var Container = __dependency2__["default"];
@@ -355,8 +341,8 @@ define("container/tests/container_test",
     });
 
     test("Throw exception when trying to inject `type:thing` on all type(s)", function(){
-      var container = new Container(),
-        PostController = factory();
+      var container = new Container();
+      var PostController = factory();
 
       container.register('controller:post', PostController);
 
@@ -698,9 +684,9 @@ define("container/tests/container_test",
     });
 
     test("can re-register a factory", function(){
-      var container = new Container(),
-        FirstApple = factory('first'),
-        SecondApple = factory('second');
+      var container = new Container();
+      var FirstApple = factory('first');
+      var SecondApple = factory('second');
 
       container.register('controller:apple', FirstApple);
       container.register('controller:apple', SecondApple);
@@ -709,9 +695,9 @@ define("container/tests/container_test",
     });
 
     test("cannot re-register a factory if has been looked up", function(){
-      var container = new Container(),
-        FirstApple = factory('first'),
-        SecondApple = factory('second');
+      var container = new Container();
+      var FirstApple = factory('first');
+      var SecondApple = factory('second');
 
       container.register('controller:apple', FirstApple);
       ok(container.lookup('controller:apple') instanceof FirstApple);
@@ -727,9 +713,9 @@ define("container/tests/container_test",
     test('container.has should not accidentally cause injections on that factory to be run. (Mitigate merely on observing)', function(){
       expect(1);
 
-      var container = new Container(),
-        FirstApple = factory('first'),
-        SecondApple = factory('second');
+      var container = new Container();
+      var FirstApple = factory('first');
+      var SecondApple = factory('second');
 
       SecondApple.extend = function(a,b,c) {
         ok(false, 'should not extend or touch the injected model, merely to inspect existence of another');
@@ -763,9 +749,9 @@ define("container/tests/container_test",
     test('once looked up, assert if an injection is registered for the entry', function() {
       expect(1);
 
-      var container = new Container(),
-          Apple = factory(),
-          Worm = factory();
+      var container = new Container();
+      var Apple = factory();
+      var Worm = factory();
 
       container.register('apple:main', Apple);
       container.register('worm:main', Worm);
@@ -778,9 +764,9 @@ define("container/tests/container_test",
     test("Once looked up, assert if a factoryInjection is registered for the factory", function() {
       expect(1);
 
-      var container = new Container(),
-          Apple = factory(),
-          Worm = factory();
+      var container = new Container();
+      var Apple = factory();
+      var Worm = factory();
 
       container.register('apple:main', Apple);
       container.register('worm:main', Worm);
@@ -789,6 +775,57 @@ define("container/tests/container_test",
       throws(function() {
         container.factoryInjection('apple:main', 'worm', 'worm:main');
       }, "Attempted to register a factoryInjection for a type that has already been looked up. ('apple:main', 'worm', 'worm:main')");
+    });
+
+    test("factory resolves are cached", function() {
+      var container = new Container();
+      var PostController = factory();
+      var resolveWasCalled = [];
+      container.resolve = function(fullName) {
+        resolveWasCalled.push(fullName);
+        return PostController;
+      };
+
+      deepEqual(resolveWasCalled, []);
+      container.lookupFactory('controller:post');
+      deepEqual(resolveWasCalled, ['controller:post']);
+
+      container.lookupFactory('controller:post');
+      deepEqual(resolveWasCalled, ['controller:post']);
+    });
+
+    test("factory for non extendables (MODEL) resolves are cached", function() {
+      var container = new Container();
+      var PostController = factory();
+      var resolveWasCalled = [];
+      container.resolve = function(fullName) {
+        resolveWasCalled.push(fullName);
+        return PostController;
+      };
+
+      deepEqual(resolveWasCalled, []);
+      container.lookupFactory('model:post');
+      deepEqual(resolveWasCalled, ['model:post']);
+
+      container.lookupFactory('model:post');
+      deepEqual(resolveWasCalled, ['model:post']);
+    });
+
+    test("factory for non extendables resolves are cached", function() {
+      var container = new Container();
+      var PostController = {};
+      var resolveWasCalled = [];
+      container.resolve = function(fullName) {
+        resolveWasCalled.push(fullName);
+        return PostController;
+      };
+
+      deepEqual(resolveWasCalled, []);
+      container.lookupFactory('foo:post');
+      deepEqual(resolveWasCalled, ['foo:post']);
+
+      container.lookupFactory('foo:post');
+      deepEqual(resolveWasCalled, ['foo:post']);
     });
   });
 define("container/tests/container_test.jshint",
@@ -805,7 +842,6 @@ define("container/tests/sub_container_test",
   function(__dependency1__, __dependency2__) {
     "use strict";
     var factory = __dependency1__.factory;
-    var o_create = __dependency1__.o_create;
     var setProperties = __dependency1__.setProperties;
 
     var Container = __dependency2__["default"];
@@ -1042,7 +1078,8 @@ define("ember-application/tests/system/application_test",
     });
 
     test("acts like a namespace", function() {
-      var lookup = Ember.lookup = {}, app;
+      var lookup = Ember.lookup = {};
+      var app;
 
       run(function() {
         app = lookup.TestApp = Application.create({ rootElement: '#two', router: false });
@@ -1249,6 +1286,16 @@ define("ember-application/tests/system/application_test",
         run(app, 'then', Ember.K);
       }, /Do not use `.then` on an instance of Ember.Application.  Please use the `.ready` hook instead./);
     });
+
+    test("registers controls onto to container", function() {
+      run(function() {
+        app = Application.create({
+          rootElement: '#qunit-fixture'
+        });
+      });
+
+      ok(app.__container__.lookup('view:select'), "Select control is registered into views");
+    });
   });
 define("ember-application/tests/system/application_test.jshint",
   [],
@@ -1293,8 +1340,8 @@ define("ember-application/tests/system/controller_test",
 
       container.register('controller:posts', Controller.extend());
 
-      var postController = container.lookup('controller:post'),
-          postsController = container.lookup('controller:posts');
+      var postController = container.lookup('controller:post');
+      var postsController = container.lookup('controller:posts');
 
       equal(postsController, postController.get('controllers.posts'), "controller.posts must be auto synthesized");
     });
@@ -1373,8 +1420,8 @@ define("ember-application/tests/system/controller_test",
 
       container.register('controller:posts', Controller.extend());
 
-      var postController = container.lookup('controller:post'),
-          postsController = container.lookup('controller:posts');
+      var postController = container.lookup('controller:post');
+      var postsController = container.lookup('controller:posts');
 
       throws(function(){
         postController.set('controllers.posts', 'epic-self-troll');
@@ -1424,6 +1471,93 @@ define("ember-application/tests/system/controller_test.jshint",
     module('JSHint - ember-application/tests/system');
     test('ember-application/tests/system/controller_test.js should pass jshint', function() { 
       ok(true, 'ember-application/tests/system/controller_test.js should pass jshint.'); 
+    });
+  });
+define("ember-application/tests/system/dag_test",
+  ["ember-application/system/dag","ember-metal/error","ember-metal/enumerable_utils"],
+  function(__dependency1__, __dependency2__, __dependency3__) {
+    "use strict";
+    var DAG = __dependency1__["default"];
+    var EmberError = __dependency2__["default"];
+    var indexOf = __dependency3__.indexOf;
+
+    QUnit.module("Ember.DAG");
+
+    test("detects circular dependencies when added", function(){
+      var graph = new DAG();
+      graph.addEdges("eat omelette", 1);
+      graph.addEdges("buy eggs", 2) ;
+      graph.addEdges("fry omelette", 3, "eat omelette", "shake eggs");
+      graph.addEdges("shake eggs", 4, undefined, "buy eggs");
+      graph.addEdges("buy oil", 5, "fry omelette");
+      graph.addEdges("warm oil", 6, "fry omelette", "buy oil");
+      graph.addEdges("prepare salad", 7);
+      graph.addEdges("prepare the table", 8, "eat omelette");
+      graph.addEdges("clear the table", 9, undefined, "eat omelette");
+      graph.addEdges("say grace", 10, "eat omelette", "prepare the table");
+
+      raises(function(){
+        graph.addEdges("imposible", 11, "shake eggs", "eat omelette");
+      }, EmberError, "raises an error when a circular dependency is added");
+    });
+
+    test("#topsort iterates over the edges respecting precedence order", function(){
+      var graph = new DAG();
+      var names = [];
+      var index = 0;
+
+      graph.addEdges("eat omelette", 1);
+      graph.addEdges("buy eggs", 2) ;
+      graph.addEdges("fry omelette", 3, "eat omelette", "shake eggs");
+      graph.addEdges("shake eggs", 4, undefined, "buy eggs");
+      graph.addEdges("buy oil", 5, "fry omelette");
+      graph.addEdges("warm oil", 6, "fry omelette", "buy oil");
+      graph.addEdges("prepare salad", 7);
+      graph.addEdges("prepare the table", 8, "eat omelette");
+      graph.addEdges("clear the table", 9, undefined, "eat omelette");
+      graph.addEdges("say grace", 10, "eat omelette", "prepare the table");
+
+
+      graph.topsort(function(vertex, path){
+        names[index] = vertex.name;
+        index++;
+      });
+
+      ok(indexOf(names, "buy eggs") < indexOf(names, "shake eggs"), "you need eggs to shake them");
+      ok(indexOf(names, "buy oil") < indexOf(names, "warm oil"), "you need oil to warm it");
+      ok(indexOf(names, "eat omelette") < indexOf(names, "clear the table"), "you clear the table after eat");
+      ok(indexOf(names, "fry omelette") < indexOf(names, "eat omelette"), "cook before eat");
+      ok(indexOf(names, "shake eggs") < indexOf(names, "fry omelette"), "shake before put into the pan");
+      ok(indexOf(names, "prepare salad") > -1, "we don't know when we prepare the salad, but we do");
+    });
+
+    test("#addEdged supports both strings and arrays to specify precedences", function(){
+      var graph = new DAG();
+      var names = [];
+      var index = 0;
+
+      graph.addEdges("eat omelette", 1);
+      graph.addEdges("buy eggs", 2) ;
+      graph.addEdges("fry omelette", 3, "eat omelette", "shake eggs");
+      graph.addEdges("shake eggs", 4, undefined, "buy eggs");
+      graph.addEdges("buy oil", 5, ["fry omelette", "shake eggs", "prepare the table"], ["warm oil"]);
+      graph.addEdges("prepare the table", 5, undefined, ["fry omelette"]);
+
+      graph.topsort(function(vertex, path){
+        names[index] = vertex.name;
+        index++;
+      });
+
+      deepEqual(names, ["buy eggs", "warm oil", "buy oil", "shake eggs", "fry omelette", "eat omelette", "prepare the table"]);
+    });
+  });
+define("ember-application/tests/system/dag_test.jshint",
+  [],
+  function() {
+    "use strict";
+    module('JSHint - ember-application/tests/system');
+    test('ember-application/tests/system/dag_test.js should pass jshint', function() { 
+      ok(true, 'ember-application/tests/system/dag_test.js should pass jshint.'); 
     });
   });
 define("ember-application/tests/system/dependency_injection/custom_resolver_test",
@@ -1790,8 +1924,8 @@ define("ember-application/tests/system/dependency_injection_test",
 
     var EmberApplication = Application;
 
-    var locator, originalLookup = Ember.lookup, lookup,
-        application, originalModelInjections;
+    var originalLookup = Ember.lookup;
+    var locator, lookup, application, originalModelInjections;
 
     QUnit.module("Ember.Application Dependency Injection", {
       setup: function() {
@@ -1850,9 +1984,9 @@ define("ember-application/tests/system/dependency_injection_test",
       application.inject('model', 'fruit', 'fruit:favorite');
       application.inject('model:user', 'communication', 'communication:main');
 
-      var user = locator.lookup('model:user'),
-      person = locator.lookup('model:person'),
-      fruit = locator.lookup('fruit:favorite');
+      var user = locator.lookup('model:user');
+      var person = locator.lookup('model:person');
+      var fruit = locator.lookup('fruit:favorite');
 
       equal(user.get('fruit'), fruit);
       equal(person.get('fruit'), fruit);
@@ -1953,41 +2087,42 @@ define("ember-application/tests/system/initializers_test",
     });
 
     test("initializers can have multiple dependencies", function () {
-      var order = [],
-          a = {
-            name: "a",
-            before: "b",
-            initialize: function(container) {
-              order.push('a');
-            }
-          },
-          b = {
-            name: "b",
-            initialize: function(container) {
-              order.push('b');
-            }
-          },
-          c = {
-            name: "c",
-            after: "b",
-            initialize: function(container) {
-              order.push('c');
-            }
-          },
-          afterB = {
-            name: "after b",
-            after: "b",
-            initialize: function(container) {
-              order.push("after b");
-            }
-          },
-          afterC = {
-            name: "after c",
-            after: "c",
-            initialize: function(container) {
-              order.push("after c");
-            }
-          };
+      var order = [];
+      var a = {
+        name: "a",
+        before: "b",
+        initialize: function(container) {
+          order.push('a');
+        }
+      };
+      var b = {
+        name: "b",
+        initialize: function(container) {
+          order.push('b');
+        }
+      };
+      var c = {
+        name: "c",
+        after: "b",
+        initialize: function(container) {
+          order.push('c');
+        }
+      };
+      var afterB = {
+        name: "after b",
+        after: "b",
+        initialize: function(container) {
+          order.push("after b");
+        }
+      };
+      var afterC = {
+        name: "after c",
+        after: "c",
+        initialize: function(container) {
+          order.push("after c");
+        }
+      };
+
       Application.initializer(b);
       Application.initializer(a);
       Application.initializer(afterC);
@@ -2008,7 +2143,8 @@ define("ember-application/tests/system/initializers_test",
     });
 
     test("initializers set on Application subclasses should not be shared between apps", function(){
-      var firstInitializerRunCount = 0, secondInitializerRunCount = 0;
+      var firstInitializerRunCount = 0;
+      var secondInitializerRunCount = 0;
       var FirstApp = Application.extend();
       FirstApp.initializer({
         name: 'first',
@@ -2043,7 +2179,8 @@ define("ember-application/tests/system/initializers_test",
     });
 
     test("initializers are concatenated", function(){
-      var firstInitializerRunCount = 0, secondInitializerRunCount = 0;
+      var firstInitializerRunCount = 0;
+      var secondInitializerRunCount = 0;
       var FirstApp = Application.extend();
       FirstApp.initializer({
         name: 'first',
@@ -2514,7 +2651,8 @@ define("ember-application/tests/system/reset_test",
     var jQuery = __dependency10__["default"];
     var Container = __dependency11__["default"];
 
-    var application, EmberApplication = Application;
+    var application;
+    var EmberApplication = Application;
 
     QUnit.module("Ember.Application - resetting", {
       setup: function() {
@@ -2842,7 +2980,8 @@ define("ember-extension-support/tests/container_debug_adapter_test",
     // Must be required to export Ember.ContainerDebugAdapter
     var Application = __dependency6__["default"];
 
-    var adapter, App, Model = EmberObject.extend();
+    var adapter, App;
+    var Model = EmberObject.extend();
 
 
     function boot() {
@@ -2915,7 +3054,8 @@ define("ember-extension-support/tests/data_adapter_test",
     var EmberApplication = __dependency9__["default"];
     var DefaultResolver = __dependency10__["default"];
 
-    var adapter, App, Model = EmberObject.extend();
+    var adapter, App;
+    var Model = EmberObject.extend();
 
     var DataAdapter = EmberDataAdapter.extend({
       detect: function(klass) {
@@ -2969,15 +3109,15 @@ define("ember-extension-support/tests/data_adapter_test",
     });
 
     test("Model types added with custom container-debug-adapter", function() {
-      var PostClass = Model.extend() ,
-          StubContainerDebugAdapter = DefaultResolver.extend({
-            canCatalogEntriesByType: function(type){
-              return true;
-            },
-            catalogEntriesByType: function(type){
-              return [PostClass];
-            }
-          });
+      var PostClass = Model.extend();
+      var StubContainerDebugAdapter = DefaultResolver.extend({
+        canCatalogEntriesByType: function(type){
+          return true;
+        },
+        catalogEntriesByType: function(type){
+          return [PostClass];
+        }
+      });
       App.__container__.register('container-debug-adapter:main', StubContainerDebugAdapter);
 
       adapter = App.__container__.lookup('data-adapter:main');
@@ -3140,8 +3280,8 @@ define("ember-handlebars-compiler/tests/block_helper_missing_test",
     "use strict";
     var EmberHandlebars = __dependency1__["default"];
 
-    var stringify = EmberHandlebars.JavaScriptCompiler.stringifyLastBlockHelperMissingInvocation,
-        s;
+    var stringify = EmberHandlebars.JavaScriptCompiler.stringifyLastBlockHelperMissingInvocation;
+    var s;
 
     QUnit.module("stringifyLastBlockHelperMissingInvocation", {
       setup: function() {
@@ -3228,9 +3368,10 @@ define("ember-handlebars-compiler/tests/precompile_type_test",
   function(__dependency1__) {
     "use strict";
     var EmberHandlebars = __dependency1__["default"];
-    var precompile = EmberHandlebars.precompile,
-        template = 'Hello World',
-        result;
+    var precompile = EmberHandlebars.precompile;
+    var parse = EmberHandlebars.parse;
+    var template = 'Hello World';
+    var result;
 
     QUnit.module("Ember.Handlebars.precompileType");
 
@@ -3248,6 +3389,14 @@ define("ember-handlebars-compiler/tests/precompile_type_test",
       result = precompile(template, false);
       equal(typeof(result), "string");
     });
+
+    if (Ember.FEATURES.isEnabled("ember-handlebars-compiler-ast-to-precompile")) {
+      test("precompile creates a function when passed an AST", function(){
+        var ast = parse(template);
+        result = precompile(ast);
+        equal(typeof(result), "function");
+      });
+    }
   });
 define("ember-handlebars-compiler/tests/precompile_type_test.jshint",
   [],
@@ -3551,6 +3700,36 @@ define("ember-handlebars/tests/controls/checkbox_test",
       }, /you must use `checked=/);
     });
 
+    QUnit.module("{{input type=boundType}}", {
+      setup: function() {
+        controller = {
+          inputType: "checkbox",
+          isChecked: true
+        };
+
+        checkboxView = EmberView.extend({
+          controller: controller,
+          template: compile('{{input type=inputType checked=isChecked}}')
+        }).create();
+
+        append();
+      },
+
+      teardown: function() {
+        destroy(checkboxView);
+      }
+    });
+
+    test("should append a checkbox", function() {
+      equal(checkboxView.$('input[type=checkbox]').length, 1, "A single checkbox is added");
+    });
+
+    // Checking for the checked property is a good way to verify that the correct
+    // view was used.
+    test("checkbox checked property is updated", function() {
+      equal(checkboxView.$('input').prop('checked'), true, "the checkbox is checked");
+    });
+
     QUnit.module("{{input type='checkbox'}} - static values", {
       setup: function() {
         controller = {
@@ -3727,8 +3906,8 @@ define("ember-handlebars/tests/controls/checkbox_test.jshint",
     });
   });
 define("ember-handlebars/tests/controls/select_test",
-  ["ember-runtime/system/object","ember-metal/run_loop","ember-views/views/view","ember-views/system/jquery","ember-metal/enumerable_utils","ember-views/system/event_dispatcher","ember-metal/computed","ember-runtime/system/namespace","ember-runtime/controllers/array_controller","ember-runtime/system/array_proxy"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__) {
+  ["ember-runtime/system/object","ember-metal/run_loop","ember-views/views/view","ember-views/system/jquery","ember-metal/enumerable_utils","ember-views/system/event_dispatcher","ember-metal/computed","ember-runtime/system/namespace","ember-runtime/controllers/array_controller","ember-runtime/system/array_proxy","ember-handlebars/controls/select"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__) {
     "use strict";
     var EmberObject = __dependency1__["default"];
     var run = __dependency2__["default"];
@@ -3740,6 +3919,8 @@ define("ember-handlebars/tests/controls/select_test",
     var Namespace = __dependency8__["default"];
     var ArrayController = __dependency9__["default"];
     var ArrayProxy = __dependency10__["default"];
+
+    var SelectView = __dependency11__["default"];
 
     var trim = jQuery.trim;
 
@@ -3867,8 +4048,9 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("can retrieve the current selected option when multiple=false", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+
       select.set('content', Ember.A([yehuda, tom]));
 
       append();
@@ -3882,10 +4064,11 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("can retrieve the current selected options when multiple=true", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
+
       select.set('content', Ember.A([yehuda, tom, david, brennain]));
       select.set('multiple', true);
       select.set('optionLabelPath', 'content.firstName');
@@ -3907,8 +4090,8 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("selection can be set when multiple=false", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom]));
@@ -3926,10 +4109,10 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("selection can be set when multiple=true", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom, david, brennain]));
@@ -3947,10 +4130,10 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("selection can be set when multiple=true and prompt", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom, david, brennain]));
@@ -3971,10 +4154,10 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("multiple selections can be set when multiple=true", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom, david, brennain]));
@@ -3997,11 +4180,11 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("multiple selections can be set by changing in place the selection array when multiple=true", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' },
-          selection = Ember.A([yehuda, tom]);
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
+      var selection = Ember.A([yehuda, tom]);
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom, david, brennain]));
@@ -4028,11 +4211,11 @@ define("ember-handlebars/tests/controls/select_test",
     test("multiple selections can be set indirectly via bindings and in-place when multiple=true (issue #1058)", function() {
       var indirectContent = EmberObject.create();
 
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' },
-          cyril = { id: 5, firstName: 'Cyril' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
+      var cyril = { id: 5, firstName: 'Cyril' };
 
       run(function() {
         select.destroy(); // Destroy the existing select
@@ -4169,11 +4352,11 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("selection uses the same array when multiple=true", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' },
-          selection = Ember.A([yehuda, david]);
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
+      var selection = Ember.A([yehuda, david]);
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom, david, brennain]));
@@ -4196,10 +4379,10 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("Ember.SelectedOption knows when it is selected when multiple=false", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom, david, brennain]));
@@ -4218,10 +4401,10 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("Ember.SelectedOption knows when it is selected when multiple=true", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' },
-          david = { id: 3, firstName: 'David' },
-          brennain = { id: 4, firstName: 'Brennain' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
+      var david = { id: 3, firstName: 'David' };
+      var brennain = { id: 4, firstName: 'Brennain' };
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom, david, brennain]));
@@ -4258,8 +4441,8 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("a prompt can be specified", function() {
-      var yehuda = { id: 1, firstName: 'Yehuda' },
-          tom = { id: 2, firstName: 'Tom' };
+      var yehuda = { id: 1, firstName: 'Yehuda' };
+      var tom = { id: 2, firstName: 'Tom' };
 
       run(function() {
         select.set('content', Ember.A([yehuda, tom]));
@@ -4433,13 +4616,14 @@ define("ember-handlebars/tests/controls/select_test",
 
       view = EmberView.create({
         app: application,
+        selectView: SelectView,
         template: Ember.Handlebars.compile(
-          '{{view Ember.Select viewName="select"' +
-          '                    contentBinding="view.app.peopleController"' +
-          '                    optionLabelPath="content.fullName"' +
-          '                    optionValuePath="content.id"' +
-          '                    prompt="Pick a person:"' +
-          '                    selectionBinding="view.app.selectedPersonController.person"}}'
+          '{{view view.selectView viewName="select"' +
+          '    contentBinding="view.app.peopleController"' +
+          '    optionLabelPath="content.fullName"' +
+          '    optionValuePath="content.id"' +
+          '    prompt="Pick a person:"' +
+          '    selectionBinding="view.app.selectedPersonController.person"}}'
         )
       });
 
@@ -4467,13 +4651,14 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("upon content change, the DOM should reflect the selection (#481)", function() {
-      var userOne = {name: 'Mike', options: Ember.A(['a', 'b']), selectedOption: 'a'},
-          userTwo = {name: 'John', options: Ember.A(['c', 'd']), selectedOption: 'd'};
+      var userOne = {name: 'Mike', options: Ember.A(['a', 'b']), selectedOption: 'a'};
+      var userTwo = {name: 'John', options: Ember.A(['c', 'd']), selectedOption: 'd'};
 
       view = EmberView.create({
         user: userOne,
+        selectView: SelectView,
         template: Ember.Handlebars.compile(
-          '{{view Ember.Select viewName="select"' +
+          '{{view view.selectView viewName="select"' +
           '    contentBinding="view.user.options"' +
           '    selectionBinding="view.user.selectedOption"}}'
         )
@@ -4483,8 +4668,8 @@ define("ember-handlebars/tests/controls/select_test",
         view.appendTo('#qunit-fixture');
       });
 
-      var select = view.get('select'),
-          selectEl = select.$()[0];
+      var select = view.get('select');
+      var selectEl = select.$()[0];
 
       equal(select.get('selection'), 'a', "Precond: Initial selection is correct");
       equal(selectEl.selectedIndex, 0, "Precond: The DOM reflects the correct selection");
@@ -4498,8 +4683,8 @@ define("ember-handlebars/tests/controls/select_test",
     });
 
     test("upon content change with Array-like content, the DOM should reflect the selection", function() {
-      var tom = {id: 4, name: 'Tom'},
-          sylvain = {id: 5, name: 'Sylvain'};
+      var tom = {id: 4, name: 'Tom'};
+      var sylvain = {id: 5, name: 'Sylvain'};
 
       var proxy = ArrayProxy.create({
         content: Ember.A(),
@@ -4508,8 +4693,9 @@ define("ember-handlebars/tests/controls/select_test",
 
       view = EmberView.create({
         proxy: proxy,
+        selectView: SelectView,
         template: Ember.Handlebars.compile(
-          '{{view Ember.Select viewName="select"' +
+          '{{view view.selectView viewName="select"' +
           '    contentBinding="view.proxy"' +
           '    selectionBinding="view.proxy.selectedOption"}}'
         )
@@ -4519,8 +4705,8 @@ define("ember-handlebars/tests/controls/select_test",
         view.appendTo('#qunit-fixture');
       });
 
-      var select = view.get('select'),
-          selectEl = select.$()[0];
+      var select = view.get('select');
+      var selectEl = select.$()[0];
 
       equal(selectEl.selectedIndex, -1, "Precond: The DOM reflects the lack of selection");
 
@@ -4536,6 +4722,7 @@ define("ember-handlebars/tests/controls/select_test",
       view = EmberView.create({
         collection: Ember.A([{name: 'Wes', value: 'w'}, {name: 'Gordon', value: 'g'}]),
         val: 'g',
+        selectView: SelectView,
         template: Ember.Handlebars.compile(templateString)
       });
 
@@ -4543,8 +4730,8 @@ define("ember-handlebars/tests/controls/select_test",
         view.appendTo('#qunit-fixture');
       });
 
-      var select = view.get('select'),
-          selectEl = select.$()[0];
+      var select = view.get('select');
+      var selectEl = select.$()[0];
 
       equal(view.get('val'), 'g', "Precond: Initial bound property is correct");
       equal(select.get('value'), 'g', "Precond: Initial selection is correct");
@@ -4561,7 +4748,7 @@ define("ember-handlebars/tests/controls/select_test",
 
     test("select element should correctly initialize and update selectedIndex and bound properties when using valueBinding (old xBinding='' syntax)", function() {
       testValueBinding(
-        '{{view Ember.Select viewName="select"' +
+        '{{view view.selectView viewName="select"' +
         '    contentBinding="view.collection"' +
         '    optionLabelPath="content.name"' +
         '    optionValuePath="content.value"' +
@@ -4572,7 +4759,7 @@ define("ember-handlebars/tests/controls/select_test",
 
     test("select element should correctly initialize and update selectedIndex and bound properties when using valueBinding (new quoteless binding shorthand)", function() {
       testValueBinding(
-        '{{view Ember.Select viewName="select"' +
+        '{{view view.selectView viewName="select"' +
         '    content=view.collection' +
         '    optionLabelPath="content.name"' +
         '    optionValuePath="content.value"' +
@@ -5506,8 +5693,6 @@ define("ember-handlebars/tests/handlebars_test",
   ["ember-metal/core","ember-views/system/jquery","ember-metal/enumerable_utils","ember-metal/run_loop","ember-runtime/system/namespace","ember-views/views/view","ember-handlebars/views/metamorph_view","ember-handlebars","ember-runtime/system/object","ember-runtime/controllers/object_controller","ember-runtime/system/native_array","ember-metal/computed","ember-runtime/system/string","ember-metal/utils","ember-runtime/system/array_proxy","ember-views/views/collection_view","ember-views/views/container_view","ember-metal/binding","ember-metal/observer","ember-handlebars/controls/text_field","ember-runtime/system/container","ember-metal/logger","ember-handlebars/string","ember-metal/property_get","ember-metal/property_set"],
   function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__, __dependency16__, __dependency17__, __dependency18__, __dependency19__, __dependency20__, __dependency21__, __dependency22__, __dependency23__, __dependency24__, __dependency25__) {
     "use strict";
-    /*globals TemplateTests:true,MyApp:true,App:true,Ember:true */
-
     /*jshint newcap:false*/
     var Ember = __dependency1__["default"];
     // Ember.lookup
@@ -5535,11 +5720,6 @@ define("ember-handlebars/tests/handlebars_test",
     var Logger = __dependency22__["default"];
 
     var htmlSafe = __dependency23__["default"];
-
-    // for global lookups in template. :(
-    Ember.View = EmberView;
-    Ember.ContainerView = ContainerView;
-    Ember.Logger = Logger;
 
     var trim = jQuery.trim;
 
@@ -5600,8 +5780,8 @@ define("ember-handlebars/tests/handlebars_test",
       run(function() { view.appendTo('#qunit-fixture'); });
     };
 
-    var originalLookup = Ember.lookup, lookup;
-    var TemplateTests, container;
+    var originalLookup = Ember.lookup;
+    var TemplateTests, container, lookup;
 
     /**
       This module specifically tests integration with Handlebars and Ember-specific
@@ -5612,9 +5792,8 @@ define("ember-handlebars/tests/handlebars_test",
     */
     QUnit.module("View - handlebars integration", {
       setup: function() {
-        Ember.lookup = lookup = { Ember: Ember };
-        lookup.TemplateTests = window.TemplateTests = TemplateTests = Namespace.create();
-
+        Ember.lookup = lookup = {};
+        lookup.TemplateTests = TemplateTests = Namespace.create();
         container = new Container();
         container.optionsForType('template', { instantiate: false });
         container.register('view:default', _MetamorphView);
@@ -5631,8 +5810,8 @@ define("ember-handlebars/tests/handlebars_test",
             }
             container = view = null;
         });
-        Ember.lookup = originalLookup;
-        window.TemplateTests = TemplateTests = undefined;
+        Ember.lookup = lookup = originalLookup;
+        TemplateTests = null;
       }
     });
 
@@ -5688,7 +5867,7 @@ define("ember-handlebars/tests/handlebars_test",
       equal(view.$().text(), "Señor CFC (and Fido)", "prints out values from a hash");
     });
 
-    test("should read from globals [DEPRECATED]", function() {
+    test("should read from globals (DEPRECATED)", function() {
       Ember.lookup.Global = 'Klarg';
       view = EmberView.create({
         template: EmberHandlebars.compile('{{Global}}')
@@ -5700,7 +5879,7 @@ define("ember-handlebars/tests/handlebars_test",
       equal(view.$().text(), Ember.lookup.Global);
     });
 
-    test("should read from globals with a path [DEPRECATED]", function() {
+    test("should read from globals with a path (DEPRECATED)", function() {
       Ember.lookup.Global = { Space: 'Klarg' };
       view = EmberView.create({
         template: EmberHandlebars.compile('{{Global.Space}}')
@@ -5712,7 +5891,7 @@ define("ember-handlebars/tests/handlebars_test",
       equal(view.$().text(), Ember.lookup.Global.Space);
     });
 
-    test("with context, should read from globals [DEPRECATED]", function() {
+    test("with context, should read from globals (DEPRECATED)", function() {
       Ember.lookup.Global = 'Klarg';
       view = EmberView.create({
         context: {},
@@ -5725,7 +5904,7 @@ define("ember-handlebars/tests/handlebars_test",
       equal(view.$().text(), Ember.lookup.Global);
     });
 
-    test("with context, should read from globals with a path [DEPRECATED]", function() {
+    test("with context, should read from globals with a path (DEPRECATED)", function() {
       Ember.lookup.Global = { Space: 'Klarg' };
       view = EmberView.create({
         context: {},
@@ -5806,20 +5985,21 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("child views can be inserted using the {{view}} Handlebars helper", function() {
-      container.register('template:nester', EmberHandlebars.compile("<h1 id='hello-world'>Hello {{world}}</h1>{{view \"TemplateTests.LabelView\"}}"));
+      container.register('template:nester', EmberHandlebars.compile("<h1 id='hello-world'>Hello {{world}}</h1>{{view view.labelView}}"));
       container.register('template:nested', EmberHandlebars.compile("<div id='child-view'>Goodbye {{cruel}} {{world}}</div>"));
 
       var context = {
         world: "world!"
       };
 
-      TemplateTests.LabelView = EmberView.extend({
+      var LabelView = EmberView.extend({
         container: container,
         tagName: "aside",
         templateName: 'nested'
       });
 
       view = EmberView.create({
+        labelView: LabelView,
         container: container,
         templateName: 'nester',
         context: context
@@ -5851,27 +6031,29 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("child views can be inserted inside a bind block", function() {
-      container.register('template:nester', EmberHandlebars.compile("<h1 id='hello-world'>Hello {{world}}</h1>{{view \"TemplateTests.BQView\"}}"));
-      container.register('template:nested', EmberHandlebars.compile("<div id='child-view'>Goodbye {{#with content}}{{blah}} {{view \"TemplateTests.OtherView\"}}{{/with}} {{world}}</div>"));
+      container.register('template:nester', EmberHandlebars.compile("<h1 id='hello-world'>Hello {{world}}</h1>{{view view.bqView}}"));
+      container.register('template:nested', EmberHandlebars.compile("<div id='child-view'>Goodbye {{#with content}}{{blah}} {{view view.otherView}}{{/with}} {{world}}</div>"));
       container.register('template:other', EmberHandlebars.compile("cruel"));
 
       var context = {
         world: "world!"
       };
 
-      TemplateTests.BQView = EmberView.extend({
-        container: container,
-        tagName: "blockquote",
-        templateName: 'nested'
-      });
-
-      TemplateTests.OtherView = EmberView.extend({
+      var OtherView = EmberView.extend({
         container: container,
         templateName: 'other'
       });
 
+      var BQView = EmberView.extend({
+        container: container,
+        otherView: OtherView,
+        tagName: "blockquote",
+        templateName: 'nested'
+      });
+
       view = EmberView.create({
         container: container,
+        bqView: BQView,
         context: context,
         templateName: 'nester'
       });
@@ -5906,10 +6088,8 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("using Handlebars helper that doesn't exist should result in an error", function() {
-      var names = [{ name: 'Alex' }, { name: 'Stef' }],
-          context = {
-            content: A(names)
-          };
+      var names = [{ name: 'Alex' }, { name: 'Stef' }];
+      var context = { content: A(names) };
 
       throws(function() {
         view = EmberView.create({
@@ -6346,16 +6526,17 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("Template views add an elementId to child views created using the view helper", function() {
-      container.register('template:parent', EmberHandlebars.compile('<div>{{view "TemplateTests.ChildView"}}</div>'));
+      container.register('template:parent', EmberHandlebars.compile('<div>{{view view.childView}}</div>'));
       container.register('template:child', EmberHandlebars.compile("I can't believe it's not butter."));
 
-      TemplateTests.ChildView = EmberView.extend({
+      var ChildView = EmberView.extend({
         container: container,
         templateName: 'child'
       });
 
       view = EmberView.create({
         container: container,
+        childView: ChildView,
         templateName: 'parent'
       });
 
@@ -6365,9 +6546,7 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("views set the template of their children to a passed block", function() {
-      container.register('template:parent', EmberHandlebars.compile('<h1>{{#view "TemplateTests.NoTemplateView"}}<span>It worked!</span>{{/view}}</h1>'));
-
-      TemplateTests.NoTemplateView = EmberView.extend();
+      container.register('template:parent', EmberHandlebars.compile('<h1>{{#view}}<span>It worked!</span>{{/view}}</h1>'));
 
       view = EmberView.create({
         container: container,
@@ -6469,8 +6648,6 @@ define("ember-handlebars/tests/handlebars_test",
     // });
 
     test("Child views created using the view helper should have their parent view set properly", function() {
-      TemplateTests = {};
-
       var template = '{{#view}}{{#view}}{{view}}{{/view}}{{/view}}';
 
       view = EmberView.create({
@@ -6484,8 +6661,6 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("Child views created using the view helper should have their IDs registered for events", function() {
-      TemplateTests = {};
-
       var template = '{{view}}{{view id="templateViewTest"}}';
 
       view = EmberView.create({
@@ -6505,8 +6680,6 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("Child views created using the view helper and that have a viewName should be registered as properties on their parentView", function() {
-      TemplateTests = {};
-
       var template = '{{#view}}{{view viewName="ohai"}}{{/view}}';
 
       view = EmberView.create({
@@ -6515,13 +6688,14 @@ define("ember-handlebars/tests/handlebars_test",
 
       appendView();
 
-      var parentView = firstChild(view),
-          childView  = firstGrandchild(view);
+      var parentView = firstChild(view);
+      var childView  = firstGrandchild(view);
+
       equal(get(parentView, 'ohai'), childView);
     });
 
     test("Collection views that specify an example view class have their children be of that class", function() {
-      TemplateTests.ExampleViewCollection = CollectionView.extend({
+      var ExampleViewCollection = CollectionView.extend({
         itemViewClass: EmberView.extend({
           isCustom: true
         }),
@@ -6529,71 +6703,80 @@ define("ember-handlebars/tests/handlebars_test",
         content: A(['foo'])
       });
 
-      var parentView = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection "TemplateTests.ExampleViewCollection"}}OHAI{{/collection}}')
+      view = EmberView.create({
+        exampleViewCollection: ExampleViewCollection,
+        template: EmberHandlebars.compile('{{#collection view.exampleViewCollection}}OHAI{{/collection}}')
       });
 
       run(function() {
-        parentView.append();
+        view.append();
       });
 
-      ok(firstGrandchild(parentView).isCustom, "uses the example view class");
-
-      run(function() {
-        parentView.destroy();
-      });
+      ok(firstGrandchild(view).isCustom, "uses the example view class");
     });
 
-    test("itemViewClass works in the #collection helper", function() {
-      TemplateTests.ExampleController = ArrayProxy.create({
-        content: A(['alpha'])
-      });
-
+    test("itemViewClass works in the #collection helper with a global (DEPRECATED)", function() {
       TemplateTests.ExampleItemView = EmberView.extend({
         isAlsoCustom: true
       });
 
-      var parentView = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection contentBinding="TemplateTests.ExampleController" itemViewClass="TemplateTests.ExampleItemView"}}beta{{/collection}}')
+      view = EmberView.create({
+        exampleController: ArrayProxy.create({
+          content: A(['alpha'])
+        }),
+        template: EmberHandlebars.compile('{{#collection content=view.exampleController itemViewClass="TemplateTests.ExampleItemView"}}beta{{/collection}}')
       });
 
-      run(function() {
-        parentView.append();
-      });
+      expectDeprecation(function(){
+        run(view, 'append');
+      }, /Resolved the view "TemplateTests.ExampleItemView" on the global context/);
 
-      ok(firstGrandchild(parentView).isAlsoCustom, "uses the example view class specified in the #collection helper");
-
-      run(function() {
-        parentView.destroy();
-      });
+      ok(firstGrandchild(view).isAlsoCustom, "uses the example view class specified in the #collection helper");
     });
 
     test("itemViewClass works in the #collection helper relatively", function() {
-      TemplateTests.ExampleController = ArrayProxy.create({
-        content: A(['alpha'])
-      });
-
-      TemplateTests.ExampleItemView = EmberView.extend({
+      var ExampleItemView = EmberView.extend({
         isAlsoCustom: true
       });
 
-      TemplateTests.CollectionView = CollectionView.extend({
-        possibleItemView: TemplateTests.ExampleItemView
+      var ExampleCollectionView = CollectionView.extend({
+        possibleItemView: ExampleItemView
       });
 
-      var parentView = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection TemplateTests.CollectionView contentBinding="TemplateTests.ExampleController" itemViewClass="possibleItemView"}}beta{{/collection}}')
+      view = EmberView.create({
+        exampleCollectionView: ExampleCollectionView,
+        exampleController: ArrayProxy.create({
+          content: A(['alpha'])
+        }),
+        template: EmberHandlebars.compile('{{#collection view.exampleCollectionView content=view.exampleController itemViewClass="possibleItemView"}}beta{{/collection}}')
       });
 
       run(function() {
-        parentView.append();
+        view.append();
       });
 
-      ok(firstGrandchild(parentView).isAlsoCustom, "uses the example view class specified in the #collection helper");
+      ok(firstGrandchild(view).isAlsoCustom, "uses the example view class specified in the #collection helper");
+    });
+
+    test("itemViewClass works in the #collection via container", function() {
+      container.register('view:example-item', EmberView.extend({
+        isAlsoCustom: true
+      }));
+
+      view = EmberView.create({
+        container: container,
+        exampleCollectionView: CollectionView.extend(),
+        exampleController: ArrayProxy.create({
+          content: A(['alpha'])
+        }),
+        template: EmberHandlebars.compile('{{#collection view.exampleCollectionView content=view.exampleController itemViewClass="example-item"}}beta{{/collection}}')
+      });
 
       run(function() {
-        parentView.destroy();
+        view.append();
       });
+
+      ok(firstGrandchild(view).isAlsoCustom, "uses the example view class specified in the #collection helper");
     });
 
     test("should update boundIf blocks if the conditional changes", function() {
@@ -6682,11 +6865,12 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("{{view}} id attribute should set id on layer", function() {
-      container.register('template:foo', EmberHandlebars.compile('{{#view "TemplateTests.IdView" id="bar"}}baz{{/view}}'));
+      container.register('template:foo', EmberHandlebars.compile('{{#view view.idView id="bar"}}baz{{/view}}'));
 
-      TemplateTests.IdView = EmberView;
+      var IdView = EmberView;
 
       view = EmberView.create({
+        idView: IdView,
         container: container,
         templateName: 'foo'
       });
@@ -6698,11 +6882,12 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("{{view}} tag attribute should set tagName of the view", function() {
-      container.register('template:foo', EmberHandlebars.compile('{{#view "TemplateTests.TagView" tag="span"}}baz{{/view}}'));
+      container.register('template:foo', EmberHandlebars.compile('{{#view view.tagView tag="span"}}baz{{/view}}'));
 
-      TemplateTests.TagView = EmberView;
+      var TagView = EmberView;
 
       view = EmberView.create({
+        tagView: TagView,
         container: container,
         templateName: 'foo'
       });
@@ -6714,11 +6899,12 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("{{view}} class attribute should set class on layer", function() {
-      container.register('template:foo', EmberHandlebars.compile('{{#view "TemplateTests.IdView" class="bar"}}baz{{/view}}'));
+      container.register('template:foo', EmberHandlebars.compile('{{#view view.idView class="bar"}}baz{{/view}}'));
 
-      TemplateTests.IdView = EmberView;
+      var IdView = EmberView;
 
       view = EmberView.create({
+        idView: IdView,
         container: container,
         templateName: 'foo'
       });
@@ -6765,7 +6951,8 @@ define("ember-handlebars/tests/handlebars_test",
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{view Ember.TextField class="unbound" classBinding="App.isGreat:great App.directClass App.isApp App.isEnabled:enabled:disabled"}}')
+        textField: TextField,
+        template: EmberHandlebars.compile('{{view view.textField class="unbound" classBinding="App.isGreat:great App.directClass App.isApp App.isEnabled:enabled:disabled"}}')
       });
 
       appendView();
@@ -6797,7 +6984,8 @@ define("ember-handlebars/tests/handlebars_test",
         isEditable:  true,
         directClass: "view-direct",
         isEnabled: true,
-        template: EmberHandlebars.compile('{{view Ember.TextField class="unbound" classBinding="view.isEditable:editable view.directClass view.isView view.isEnabled:enabled:disabled"}}')
+        textField: TextField,
+        template: EmberHandlebars.compile('{{view view.textField class="unbound" classBinding="view.isEditable:editable view.directClass view.isView view.isEnabled:enabled:disabled"}}')
       });
 
       appendView();
@@ -6830,7 +7018,8 @@ define("ember-handlebars/tests/handlebars_test",
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{view Ember.TextField class="unbound" classBinding="App.isGreat:great App.isEnabled:enabled:disabled" classNameBindings="App.isGreat:really-great App.isEnabled:really-enabled:really-disabled"}}')
+        textField: TextField,
+        template: EmberHandlebars.compile('{{view view.textField class="unbound" classBinding="App.isGreat:great App.isEnabled:enabled:disabled" classNameBindings="App.isGreat:really-great App.isEnabled:really-enabled:really-disabled"}}')
       });
 
       appendView();
@@ -6865,7 +7054,8 @@ define("ember-handlebars/tests/handlebars_test",
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{view Ember.TextField valueBinding="App.name"}}')
+        textField: TextField,
+        template: EmberHandlebars.compile('{{view view.textField valueBinding="App.name"}}')
       });
 
       appendView();
@@ -6880,7 +7070,8 @@ define("ember-handlebars/tests/handlebars_test",
     test("{{view}} should evaluate other attributes bindings set in the current context", function() {
       view = EmberView.create({
         name: "myView",
-        template: EmberHandlebars.compile('{{view Ember.TextField valueBinding="view.name"}}')
+        textField: TextField,
+        template: EmberHandlebars.compile('{{view view.textField valueBinding="view.name"}}')
       });
 
       appendView();
@@ -6889,11 +7080,12 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("{{view}} should be able to bind class names to truthy properties", function() {
-      container.register('template:template', EmberHandlebars.compile('{{#view "TemplateTests.classBindingView" classBinding="view.number:is-truthy"}}foo{{/view}}'));
+      container.register('template:template', EmberHandlebars.compile('{{#view view.classBindingView classBinding="view.number:is-truthy"}}foo{{/view}}'));
 
-      TemplateTests.classBindingView = EmberView.extend();
+      var ClassBindingView = EmberView.extend();
 
       view = EmberView.create({
+        classBindingView: ClassBindingView,
         container: container,
         number: 5,
         templateName: 'template'
@@ -6911,11 +7103,12 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("{{view}} should be able to bind class names to truthy or falsy properties", function() {
-      container.register('template:template', EmberHandlebars.compile('{{#view "TemplateTests.classBindingView" classBinding="view.number:is-truthy:is-falsy"}}foo{{/view}}'));
+      container.register('template:template', EmberHandlebars.compile('{{#view view.classBindingView classBinding="view.number:is-truthy:is-falsy"}}foo{{/view}}'));
 
-      TemplateTests.classBindingView = EmberView.extend();
+      var ClassBindingView = EmberView.extend();
 
       view = EmberView.create({
+        classBindingView: ClassBindingView,
         container: container,
         number: 5,
         templateName: 'template'
@@ -7003,20 +7196,24 @@ define("ember-handlebars/tests/handlebars_test",
       equal(view.$('img').attr('alt'), "Updated", "updates value");
     });
 
-    test("should be able to bind to globals with {{bind-attr}}", function() {
+    test("should be able to bind to globals with {{bind-attr}} (DEPRECATED)", function() {
       TemplateTests.set('value', 'Test');
 
       view = EmberView.create({
         template: EmberHandlebars.compile('<img src="test.jpg" {{bind-attr alt="TemplateTests.value"}}>')
       });
 
-      appendView();
+      expectDeprecation(function(){
+        appendView();
+      }, /Global lookup of TemplateTests.value from a Handlebars template is deprecated/);
 
       equal(view.$('img').attr('alt'), "Test", "renders initial value");
 
-      run(function() {
-        TemplateTests.set('value', 'Updated');
-      });
+      expectDeprecation(function(){
+        run(function() {
+          TemplateTests.set('value', 'Updated');
+        });
+      }, /Global lookup of TemplateTests.value from a Handlebars template is deprecated/);
 
       equal(view.$('img').attr('alt'), "Updated", "updates value");
     });
@@ -7091,8 +7288,8 @@ define("ember-handlebars/tests/handlebars_test",
 
     test("{{bindAttr}} is aliased to {{bind-attr}}", function() {
 
-      var originalBindAttr = EmberHandlebars.helpers['bind-attr'],
-        originalWarn = Ember.warn;
+      var originalBindAttr = EmberHandlebars.helpers['bind-attr'];
+      var originalWarn = Ember.warn;
 
       Ember.warn = function(msg) {
         equal(msg, "The 'bindAttr' view helper is deprecated in favor of 'bind-attr'", 'Warning called');
@@ -7286,20 +7483,24 @@ define("ember-handlebars/tests/handlebars_test",
       ok(view.$('div').hasClass('disabled'), "falsy class in ternary classname definition is rendered");
     });
 
-    test("should be able to bind classes to globals with {{bind-attr class}}", function() {
+    test("should be able to bind classes to globals with {{bind-attr class}} (DEPRECATED)", function() {
       TemplateTests.set('isOpen', true);
 
       view = EmberView.create({
         template: EmberHandlebars.compile('<img src="test.jpg" {{bind-attr class="TemplateTests.isOpen"}}>')
       });
 
-      appendView();
+      expectDeprecation(function(){
+        appendView();
+      }, /Global lookup of TemplateTests.isOpen from a Handlebars template is deprecated/);
 
       ok(view.$('img').hasClass('is-open'), "sets classname to the dasherized value of the global property");
 
-      run(function() {
-        TemplateTests.set('isOpen', false);
-      });
+      expectDeprecation(function(){
+        run(function() {
+          TemplateTests.set('isOpen', false);
+        });
+      }, /Global lookup of TemplateTests.isOpen from a Handlebars template is deprecated/);
 
       ok(!view.$('img').hasClass('is-open'), "removes the classname when the global property has changed");
     });
@@ -7427,8 +7628,9 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("should work with precompiled templates", function() {
-      var templateString = EmberHandlebars.precompile("{{view.value}}"),
-          compiledTemplate = EmberHandlebars.template(eval(templateString));
+      var templateString = EmberHandlebars.precompile("{{view.value}}");
+      var compiledTemplate = EmberHandlebars.template(eval(templateString));
+
       view = EmberView.create({
         value: "rendered",
         template: compiledTemplate
@@ -7505,8 +7707,9 @@ define("ember-handlebars/tests/handlebars_test",
     });
 
     test("should expose a controller keyword that persists through Ember.ContainerView", function() {
-      var templateString = "{{view Ember.ContainerView}}";
+      var templateString = "{{view view.containerView}}";
       view = EmberView.create({
+        containerView: ContainerView,
         container: container,
         controller: EmberObject.create({
           foo: "bar"
@@ -7555,13 +7758,14 @@ define("ember-handlebars/tests/handlebars_test",
         test: 'test'
       });
 
-      TemplateTests.CustomContextView = EmberView.extend({
+      var CustomContextView = EmberView.extend({
         context: context,
         template: EmberHandlebars.compile("{{test}}")
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile("{{view TemplateTests.CustomContextView}}")
+        customContextView: CustomContextView,
+        template: EmberHandlebars.compile("{{view view.customContextView}}")
       });
 
       appendView();
@@ -7862,7 +8066,7 @@ define("ember-handlebars/tests/handlebars_test",
       });
 
       App.test = EmberObject.create({ href: 'test' });
-      App.Link = EmberView.extend({
+      var LinkView = EmberView.extend({
         classNames: ['app-link'],
         tagName: 'a',
         attributeBindings: ['href'],
@@ -7874,7 +8078,8 @@ define("ember-handlebars/tests/handlebars_test",
       });
 
       var parentView = EmberView.create({
-        template: EmberHandlebars.compile('{{#view App.Link hrefBinding="App.test.href"}} Test {{/view}}')
+        linkView: LinkView,
+        template: EmberHandlebars.compile('{{#view view.linkView hrefBinding="App.test.href"}} Test {{/view}}')
       });
 
 
@@ -8084,7 +8289,6 @@ define("ember-handlebars/tests/helpers/bound_helper_test",
   ["ember-views/views/view","ember-metal/run_loop","ember-runtime/system/object","ember-runtime/system/namespace","ember-runtime/system/native_array","ember-metal/property_get","ember-metal/property_set","ember-handlebars-compiler"],
   function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__) {
     "use strict";
-    /*globals TemplateTests*/
     /*jshint newcap:false*/
     var EmberView = __dependency1__["default"];
     var run = __dependency2__["default"];
@@ -8101,6 +8305,8 @@ define("ember-handlebars/tests/helpers/bound_helper_test",
     var compile = EmberHandlebars.compile;
 
     var view;
+
+    var originalLookup = Ember.lookup;
 
     function appendView() {
       run(function() { view.appendTo('#qunit-fixture'); });
@@ -8119,7 +8325,6 @@ define("ember-handlebars/tests/helpers/bound_helper_test",
 
     QUnit.module("Handlebars bound helpers", {
       setup: function() {
-        window.TemplateTests = Namespace.create();
       },
       teardown: function() {
         run(function() {
@@ -8127,7 +8332,7 @@ define("ember-handlebars/tests/helpers/bound_helper_test",
             view.destroy();
           }
         });
-        window.TemplateTests = undefined;
+        Ember.lookup = originalLookup;
       }
     });
 
@@ -8206,18 +8411,20 @@ define("ember-handlebars/tests/helpers/bound_helper_test",
       ok(view.$().text() === 'AB', "helper output is correct");
     });
 
-    test("bound helpers should support global paths", function() {
+    test("bound helpers should support global paths [DEPRECATED]", function() {
       EmberHandlebars.helper('capitalize', function(value) {
         return value.toUpperCase();
       });
 
-      TemplateTests.text = 'ab';
+      Ember.lookup = {Text: 'ab'};
 
       view = EmberView.create({
-        template: EmberHandlebars.compile("{{capitalize TemplateTests.text}}")
+        template: EmberHandlebars.compile("{{capitalize Text}}")
       });
 
-      appendView();
+      expectDeprecation(function() {
+        appendView();
+      }, /Global lookup of Text from a Handlebars template is deprecated/);
 
       ok(view.$().text() === 'AB', "helper output is correct");
     });
@@ -8244,6 +8451,33 @@ define("ember-handlebars/tests/helpers/bound_helper_test",
       view = EmberView.create({
         controller: EmberObject.create({text: 'ab', numRepeats: 3}),
         template: EmberHandlebars.compile('{{repeat text countBinding="numRepeats"}}')
+      });
+
+      appendView();
+
+      equal(view.$().text(), 'ababab', "helper output is correct");
+
+      run(function() {
+        view.set('controller.numRepeats', 4);
+      });
+
+      equal(view.$().text(), 'abababab', "helper correctly re-rendered after bound option was changed");
+
+      run(function() {
+        view.set('controller.numRepeats', 2);
+        view.set('controller.text', "YES");
+      });
+
+      equal(view.$().text(), 'YESYES', "helper correctly re-rendered after both bound option and property changed");
+    });
+
+    test("bound helpers should support unquoted values as bound options", function() {
+
+      registerRepeatHelper();
+
+      view = EmberView.create({
+        controller: EmberObject.create({text: 'ab', numRepeats: 3}),
+        template: EmberHandlebars.compile('{{repeat text count=numRepeats}}')
       });
 
       appendView();
@@ -8604,7 +8838,8 @@ define("ember-handlebars/tests/helpers/debug_test",
     var EmberHandlebars = __dependency5__["default"];
     var logHelper = __dependency6__.logHelper;
 
-    var originalLookup = Ember.lookup, lookup;
+    var originalLookup = Ember.lookup;
+    var lookup;
     var originalLog, logCalls;
     var originalLogHelper;
     var view;
@@ -8711,13 +8946,14 @@ define("ember-handlebars/tests/helpers/each_test",
     var set = __dependency14__.set;
 
     var people, view, container;
-    var template, templateMyView;
+    var template, templateMyView, MyView;
 
     function templateFor(template) {
       return EmberHandlebars.compile(template);
     }
 
-    var originalLookup = Ember.lookup, lookup;
+    var originalLookup = Ember.lookup;
+    var lookup;
 
     QUnit.module("the #each helper", {
       setup: function() {
@@ -8737,8 +8973,8 @@ define("ember-handlebars/tests/helpers/each_test",
         });
 
         templateMyView = templateFor("{{name}}");
-        lookup.MyView = EmberView.extend({
-            template: templateMyView
+        lookup.MyView = MyView = EmberView.extend({
+          template: templateMyView
         });
 
         append(view);
@@ -8970,8 +9206,8 @@ define("ember-handlebars/tests/helpers/each_test",
             controllerName: computed(function() {
               return "controller:" + get(this, 'model.name') + ' of ' + get(this, 'parentController.company');
             })
-          }),
-          parentController = {
+          });
+      var parentController = {
             container: container,
             company: 'Yapp'
           };
@@ -8998,8 +9234,8 @@ define("ember-handlebars/tests/helpers/each_test",
             controllerName: computed(function() {
               return "controller:" + get(this, 'model.name') + ' of ' + get(this, 'parentController.company');
             })
-          }),
-          PeopleController = ArrayController.extend({
+          });
+      var PeopleController = ArrayController.extend({
             model: people,
             itemController: 'person',
             company: 'Yapp'
@@ -9026,16 +9262,16 @@ define("ember-handlebars/tests/helpers/each_test",
             controllerName: computed(function() {
               return "controller:" + get(this, 'model.name') + ' of ' + get(this, 'parentController.company');
             })
-          }),
-          PeopleController = ArrayController.extend({
+          });
+      var PeopleController = ArrayController.extend({
             model: people,
             itemController: 'person',
             parentController: computed(function(){
               return this.container.lookup('controller:company');
             }),
             company: 'Yapp'
-          }),
-          CompanyController = EmberController.extend();
+          });
+       var CompanyController = EmberController.extend();
 
       container.register('controller:company', CompanyController);
       container.register('controller:people', PeopleController);
@@ -9131,10 +9367,31 @@ define("ember-handlebars/tests/helpers/each_test",
 
     });
 
-    test("it supports {{itemViewClass=}}", function() {
+    test("it supports {{itemViewClass=}} with global (DEPRECATED)", function() {
       run(function() { view.destroy(); }); // destroy existing view
       view = EmberView.create({
         template: templateFor('{{each view.people itemViewClass="MyView"}}'),
+        people: people
+      });
+
+
+      expectDeprecation(function(){
+        append(view);
+      }, /Resolved the view "MyView" on the global context/);
+
+      assertText(view, "Steve HoltAnnabelle");
+    });
+
+    test("it supports {{itemViewClass=}} via container", function() {
+      run(function() { view.destroy(); }); // destroy existing view
+      view = EmberView.create({
+        container: {
+          lookupFactory: function(name){
+            equal(name, 'view:my-view');
+            return MyView;
+          }
+        },
+        template: templateFor('{{each view.people itemViewClass="my-view"}}'),
         people: people
       });
 
@@ -9160,13 +9417,18 @@ define("ember-handlebars/tests/helpers/each_test",
 
     test("it supports {{itemViewClass=}} with in format", function() {
 
-      lookup.MyView = EmberView.extend({
-          template: templateFor("{{person.name}}")
+      MyView = EmberView.extend({
+        template: templateFor("{{person.name}}")
       });
 
       run(function() { view.destroy(); }); // destroy existing view
       view = EmberView.create({
-        template: templateFor('{{each person in view.people itemViewClass="MyView"}}'),
+        container: {
+          lookupFactory: function(name){
+            return MyView;
+          }
+        },
+        template: templateFor('{{each person in view.people itemViewClass="myView"}}'),
         people: people
       });
 
@@ -9245,8 +9507,8 @@ define("ember-handlebars/tests/helpers/each_test",
     test("#each accepts a name binding and does not change the context", function() {
       var controller = EmberController.create({
         name: 'bob the controller'
-      }),
-      obj = EmberObject.create({
+      });
+      var obj = EmberObject.create({
         name: 'henry the item'
       });
 
@@ -9404,14 +9666,14 @@ define("ember-handlebars/tests/helpers/each_test",
             controllerName: computed(function() {
               return "controller:" + get(this, 'model.name') + ' of ' + get(this, 'parentController.company');
             })
-          }),
-          PeopleController = ArrayController.extend({
+          });
+      var PeopleController = ArrayController.extend({
             model: people,
             itemController: 'person',
             company: 'Yapp',
             controllerName: 'controller:people'
-          }),
-          container = new Container();
+          });
+      var container = new Container();
 
       container.register('controller:people', PeopleController);
       container.register('controller:person', PersonController);
@@ -9699,8 +9961,9 @@ define("ember-handlebars/tests/helpers/group_test",
     });
 
     test("#each with itemViewClass behaves like a normal bound #each", function() {
+      container.register('view:nothing-special-view', Ember.View);
       createGroupedView(
-        '{{#each people itemViewClass="Ember.View"}}{{name}}{{/each}}',
+        '{{#each people itemViewClass="nothing-special-view"}}{{name}}{{/each}}',
         {people: A([{name: 'Erik'}, {name: 'Peter'}])}
       );
       appendView();
@@ -10017,8 +10280,8 @@ define("ember-handlebars/tests/helpers/partial_test",
 
     var compile = EmberHandlebars.compile;
 
-    var MyApp;
-    var originalLookup = Ember.lookup, lookup, TemplateTests, view, container;
+    var MyApp, lookup, TemplateTests, view, container;
+    var originalLookup = Ember.lookup;
 
     QUnit.module("Support for {{partial}} helper", {
       setup: function() {
@@ -10137,8 +10400,8 @@ define("ember-handlebars/tests/helpers/template_test",
     var Container = __dependency5__["default"];
     var EmberHandlebars = __dependency6__["default"];
 
-    var MyApp;
-    var originalLookup = Ember.lookup, lookup, TemplateTests, view, container;
+    var MyApp, lookup, TemplateTests, view, container;
+    var originalLookup = Ember.lookup;
 
     QUnit.module("Support for {{template}} helper", {
       setup: function() {
@@ -10227,9 +10490,8 @@ define("ember-handlebars/tests/helpers/unbound_test",
       run(function() { view.appendTo('#qunit-fixture'); });
     }
 
-    var view;
-    var originalLookup = Ember.lookup, lookup;
-    var container;
+    var view, lookup, container;
+    var originalLookup = Ember.lookup;
 
     QUnit.module("Handlebars {{#unbound}} helper -- classic single-property usage", {
       setup: function() {
@@ -10516,14 +10778,15 @@ define("ember-handlebars/tests/helpers/unbound_test.jshint",
     });
   });
 define("ember-handlebars/tests/helpers/view_test",
-  ["ember-views/views/view","container/container","ember-metal/run_loop","ember-views/system/jquery"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__) {
+  ["ember-views/views/view","container/container","ember-metal/run_loop","ember-views/system/jquery","ember-metal/platform"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__) {
     "use strict";
     /*globals EmberDev */
     var EmberView = __dependency1__["default"];
     var Container = __dependency2__["default"];
     var run = __dependency3__["default"];
     var jQuery = __dependency4__["default"];
+    var platform = __dependency5__.platform;
 
     var view, originalLookup;
 
@@ -10556,6 +10819,12 @@ define("ember-handlebars/tests/helpers/view_test",
         template: Ember.Handlebars.compile('hello world')
       });
 
+      function lookupFactory(fullName) {
+        equal(fullName, 'view:toplevel');
+
+        return DefaultView;
+      }
+
       var container = {
         lookupFactory: lookupFactory
       };
@@ -10568,25 +10837,19 @@ define("ember-handlebars/tests/helpers/view_test",
       run(view, 'appendTo', '#qunit-fixture');
 
       equal(jQuery('#toplevel-view').text(), 'hello world');
-
-      function lookupFactory(fullName) {
-        equal(fullName, 'view:toplevel');
-
-        return DefaultView;
-      }
     });
 
     test("By default, without a container, EmberView is used", function() {
       view = EmberView.extend({
-        template: Ember.Handlebars.compile('{{view tagName="span"}}'),
+        template: Ember.Handlebars.compile('{{view tagName="span"}}')
       }).create();
 
       run(view, 'appendTo', '#qunit-fixture');
 
-      ok(jQuery('#qunit-fixture').html().match(/<span/), 'contains view with span');
+      ok(jQuery('#qunit-fixture').html().toUpperCase().match(/<SPAN/), 'contains view with span');
     });
 
-    test("View lookup - App.FuView", function() {
+    test("View lookup - App.FuView (DEPRECATED)", function() {
       Ember.lookup = {
         App: {
           FuView: viewClass({
@@ -10600,12 +10863,14 @@ define("ember-handlebars/tests/helpers/view_test",
         template: Ember.Handlebars.compile("{{view App.FuView}}")
       }).create();
 
-      run(view, 'appendTo', '#qunit-fixture');
+      expectDeprecation(function(){
+        run(view, 'appendTo', '#qunit-fixture');
+      }, /Resolved the view "App.FuView" on the global context/);
 
       equal(jQuery('#fu').text(), 'bro');
     });
 
-    test("View lookup - 'App.FuView'", function() {
+    test("View lookup - 'App.FuView' (DEPRECATED)", function() {
       Ember.lookup = {
         App: {
           FuView: viewClass({
@@ -10619,7 +10884,9 @@ define("ember-handlebars/tests/helpers/view_test",
         template: Ember.Handlebars.compile("{{view 'App.FuView'}}")
       }).create();
 
-      run(view, 'appendTo', '#qunit-fixture');
+      expectDeprecation(function(){
+        run(view, 'appendTo', '#qunit-fixture');
+      }, /Resolved the view "App.FuView" on the global context/);
 
       equal(jQuery('#fu').text(), 'bro');
     });
@@ -10629,6 +10896,12 @@ define("ember-handlebars/tests/helpers/view_test",
         elementId: "fu",
         template: Ember.Handlebars.compile("bro")
       });
+
+      function lookupFactory(fullName) {
+        equal(fullName, 'view:fu');
+
+        return FuView;
+      }
 
       var container = {
         lookupFactory: lookupFactory
@@ -10642,12 +10915,6 @@ define("ember-handlebars/tests/helpers/view_test",
       run(view, 'appendTo', '#qunit-fixture');
 
       equal(jQuery('#fu').text(), 'bro');
-
-      function lookupFactory(fullName) {
-        equal(fullName, 'view:fu');
-
-        return FuView;
-      }
     });
 
     test("View lookup - view.computed", function() {
@@ -10655,6 +10922,12 @@ define("ember-handlebars/tests/helpers/view_test",
         elementId: "fu",
         template: Ember.Handlebars.compile("bro")
       });
+
+      function lookupFactory(fullName) {
+        equal(fullName, 'view:fu');
+
+        return FuView;
+      }
 
       var container = {
         lookupFactory: lookupFactory
@@ -10669,12 +10942,6 @@ define("ember-handlebars/tests/helpers/view_test",
       run(view, 'appendTo', '#qunit-fixture');
 
       equal(jQuery('#fu').text(), 'bro');
-
-      function lookupFactory(fullName) {
-        equal(fullName, 'view:fu');
-
-        return FuView;
-      }
     });
 
     test("id bindings downgrade to one-time property lookup", function() {
@@ -10734,6 +11001,18 @@ define("ember-handlebars/tests/helpers/view_test",
       ok(jQuery('#bar').hasClass('bar'));
       equal(jQuery('#bar').text(), 'Bar');
     });
+    test("Should apply class without condition always", function() {
+      view = EmberView.create({
+        context: [],
+        controller: Ember.Object.create(),
+        template: Ember.Handlebars.compile('{{#view id="foo" classBinding=":foo"}} Foo{{/view}}')
+      });
+
+      run(view, 'appendTo', '#qunit-fixture');
+
+      ok(jQuery('#foo').hasClass('foo'), "Always applies classbinding without condition");
+
+    });
   });
 define("ember-handlebars/tests/helpers/view_test.jshint",
   [],
@@ -10765,8 +11044,8 @@ define("ember-handlebars/tests/helpers/with_test",
       run(function() { view.appendTo('#qunit-fixture'); });
     }
 
-    var view;
-    var originalLookup = Ember.lookup, lookup;
+    var view, lookup;
+    var originalLookup = Ember.lookup;
 
     QUnit.module("Handlebars {{#with}} helper", {
       setup: function() {
@@ -10872,7 +11151,7 @@ define("ember-handlebars/tests/helpers/with_test",
 
       equal(view.$().text(), "Limbo-Wrath-Treachery-Wrath-Limbo", "should be properly scoped after updating");
     });
-    QUnit.module("Handlebars {{#with}} globals helper", {
+    QUnit.module("Handlebars {{#with}} globals helper [DEPRECATED]", {
       setup: function() {
         Ember.lookup = lookup = { Ember: Ember };
 
@@ -10881,7 +11160,9 @@ define("ember-handlebars/tests/helpers/with_test",
           template: EmberHandlebars.compile("{{#with Foo.bar as qux}}{{qux}}{{/with}}")
         });
 
-        appendView(view);
+        ignoreDeprecation(function() {
+          appendView(view);
+        });
       },
 
       teardown: function() {
@@ -10892,12 +11173,14 @@ define("ember-handlebars/tests/helpers/with_test",
       }
     });
 
-    test("it should support #with Foo.bar as qux", function() {
+    test("it should support #with Foo.bar as qux [DEPRECATED]", function() {
       equal(view.$().text(), "baz", "should be properly scoped");
 
-      run(function() {
-        set(lookup.Foo, 'bar', 'updated');
-      });
+      expectDeprecation(function() {
+        run(function() {
+          set(lookup.Foo, 'bar', 'updated');
+        });
+      }, /Global lookup of Foo.bar from a Handlebars template is deprecated/);
 
       equal(view.$().text(), "updated", "should update");
     });
@@ -11251,14 +11534,10 @@ define("ember-handlebars/tests/helpers/yield_test",
     var Component = __dependency10__["default"];
     var EmberError = __dependency11__["default"];
 
-    var originalLookup = Ember.lookup, lookup, TemplateTests, view, container;
+    var view, container;
 
     QUnit.module("Support for {{yield}} helper", {
       setup: function() {
-        Ember.lookup = lookup = { Ember: Ember };
-
-        lookup.TemplateTests = TemplateTests = Namespace.create();
-
         container = new Container();
         container.optionsForType('template', { instantiate: false });
       },
@@ -11269,18 +11548,17 @@ define("ember-handlebars/tests/helpers/yield_test",
             view.destroy();
           }
         });
-
-        Ember.lookup = originalLookup;
       }
     });
 
     test("a view with a layout set renders its template where the {{yield}} helper appears", function() {
-      TemplateTests.ViewWithLayout = EmberView.extend({
+      var ViewWithLayout = EmberView.extend({
         layout: EmberHandlebars.compile('<div class="wrapper"><h1>{{title}}</h1>{{yield}}</div>')
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#view TemplateTests.ViewWithLayout title="My Fancy Page"}}<div class="page-body">Show something interesting here</div>{{/view}}')
+        withLayout: ViewWithLayout,
+        template: EmberHandlebars.compile('{{#view view.withLayout title="My Fancy Page"}}<div class="page-body">Show something interesting here</div>{{/view}}')
       });
 
       run(function() {
@@ -11292,12 +11570,12 @@ define("ember-handlebars/tests/helpers/yield_test",
 
     test("block should work properly even when templates are not hard-coded", function() {
       container.register('template:nester', EmberHandlebars.compile('<div class="wrapper"><h1>{{title}}</h1>{{yield}}</div>'));
-      container.register('template:nested', EmberHandlebars.compile('{{#view TemplateTests.ViewWithLayout title="My Fancy Page"}}<div class="page-body">Show something interesting here</div>{{/view}}'));
+      container.register('template:nested', EmberHandlebars.compile('{{#view "with-layout" title="My Fancy Page"}}<div class="page-body">Show something interesting here</div>{{/view}}'));
 
-      TemplateTests.ViewWithLayout = EmberView.extend({
+      container.register('view:with-layout', EmberView.extend({
         container: container,
         layoutName: 'nester'
-      });
+      }));
 
       view = EmberView.create({
         container: container,
@@ -11313,11 +11591,12 @@ define("ember-handlebars/tests/helpers/yield_test",
     });
 
     test("templates should yield to block, when the yield is embedded in a hierarchy of virtual views", function() {
-      TemplateTests.TimesView = EmberView.extend({
+      var TimesView = EmberView.extend({
         layout: EmberHandlebars.compile('<div class="times">{{#each view.index}}{{yield}}{{/each}}</div>'),
         n: null,
         index: computed(function() {
-          var n = get(this, 'n'), indexArray = A();
+          var n = get(this, 'n');
+          var indexArray = A();
           for (var i=0; i < n; i++) {
             indexArray[i] = i;
           }
@@ -11326,7 +11605,8 @@ define("ember-handlebars/tests/helpers/yield_test",
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('<div id="container"><div class="title">Counting to 5</div>{{#view TemplateTests.TimesView n=5}}<div class="times-item">Hello</div>{{/view}}</div>')
+        timesView: TimesView,
+        template: EmberHandlebars.compile('<div id="container"><div class="title">Counting to 5</div>{{#view view.timesView n=5}}<div class="times-item">Hello</div>{{/view}}</div>')
       });
 
       run(function() {
@@ -11337,12 +11617,13 @@ define("ember-handlebars/tests/helpers/yield_test",
     });
 
     test("templates should yield to block, when the yield is embedded in a hierarchy of non-virtual views", function() {
-      TemplateTests.NestingView = EmberView.extend({
+      var NestingView = EmberView.extend({
         layout: EmberHandlebars.compile('{{#view tagName="div" classNames="nesting"}}{{yield}}{{/view}}')
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('<div id="container">{{#view TemplateTests.NestingView}}<div id="block">Hello</div>{{/view}}</div>')
+        nestingView: NestingView,
+        template: EmberHandlebars.compile('<div id="container">{{#view view.nestingView}}<div id="block">Hello</div>{{/view}}</div>')
       });
 
       run(function() {
@@ -11353,12 +11634,13 @@ define("ember-handlebars/tests/helpers/yield_test",
     });
 
     test("block should not be required", function() {
-      TemplateTests.YieldingView = EmberView.extend({
+      var YieldingView = EmberView.extend({
         layout: EmberHandlebars.compile('{{#view tagName="div" classNames="yielding"}}{{yield}}{{/view}}')
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('<div id="container">{{view TemplateTests.YieldingView}}</div>')
+        yieldingView: YieldingView,
+        template: EmberHandlebars.compile('<div id="container">{{view view.yieldingView}}</div>')
       });
 
       run(function() {
@@ -11657,7 +11939,8 @@ define("ember-handlebars/tests/loader_test",
     var EmberView = __dependency3__["default"];
     var trim = jQuery.trim;
 
-    var originalLookup = Ember.lookup, lookup, Tobias, App, view;
+    var originalLookup = Ember.lookup;
+    var lookup, Tobias, App, view;
 
     QUnit.module("test Ember.Handlebars.bootstrap", {
       setup: function() {
@@ -11856,12 +12139,14 @@ define("ember-handlebars/tests/lookup_test",
       deepEqual(params, ["Mr", "Tom", "Dale"]);
     });
 
-    test("ID parameters that start with capital letters fall back to Ember.lookup as their context", function() {
+    test("ID parameters that start with capital letters fall back to Ember.lookup as their context (DEPRECATED)", function() {
       Ember.lookup.Global = "I'm going global, what you ain't a local?";
 
-      var context = {};
+      var context = {}, params;
 
-      var params = Ember.Handlebars.resolveParams(context, ["Global"], { types: ["ID"] });
+      expectDeprecation(function(){
+        params = Ember.Handlebars.resolveParams(context, ["Global"], { types: ["ID"] });
+      }, /Global lookup of Global from a Handlebars template is deprecated./);
       deepEqual(params, [Ember.lookup.Global]);
     });
 
@@ -11971,7 +12256,6 @@ define("ember-handlebars/tests/views/collection_view_test",
   ["ember-views/views/view","ember-metal/run_loop","ember-views/system/jquery","ember-runtime/system/object","ember-metal/computed","ember-runtime/system/namespace","ember-runtime/system/array_proxy","ember-views/views/collection_view","ember-runtime/system/native_array","ember-runtime/system/container","ember-handlebars-compiler","ember-metal/property_get","ember-metal/property_set"],
   function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__) {
     "use strict";
-    /*globals TemplateTests:true,App:true */
     /*jshint newcap:false*/
 
     var EmberView = __dependency1__["default"];
@@ -12001,7 +12285,8 @@ define("ember-handlebars/tests/views/collection_view_test",
 
     var firstChild = nthChild;
 
-    var originalLookup = Ember.lookup, lookup, TemplateTests, view;
+    var originalLookup = Ember.lookup;
+    var lookup, TemplateTests, view;
 
     QUnit.module("ember-handlebars/tests/views/collection_view_test", {
       setup: function() {
@@ -12020,13 +12305,14 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("passing a block to the collection helper sets it as the template for example views", function() {
-      TemplateTests.CollectionTestView = CollectionView.extend({
+      var CollectionTestView = CollectionView.extend({
         tagName: 'ul',
         content: A(['foo', 'bar', 'baz'])
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection TemplateTests.CollectionTestView}} <label></label> {{/collection}}')
+        collectionTestView: CollectionTestView,
+        template: EmberHandlebars.compile('{{#collection view.collectionTestView}} <label></label> {{/collection}}')
       });
 
       run(function() {
@@ -12082,12 +12368,12 @@ define("ember-handlebars/tests/views/collection_view_test",
         lookup.App = App = Namespace.create();
       });
 
-      App.EmptyView = EmberView.extend({
+      var EmptyView = EmberView.extend({
         template : EmberHandlebars.compile("<td>No Rows Yet</td>")
       });
 
-      App.ListView = CollectionView.extend({
-        emptyView: App.EmptyView
+      var ListView = CollectionView.extend({
+        emptyView: EmptyView
       });
 
       App.listController = ArrayProxy.create({
@@ -12095,7 +12381,8 @@ define("ember-handlebars/tests/views/collection_view_test",
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection App.ListView contentBinding="App.listController" tagName="table"}} <td>{{view.content.title}}</td> {{/collection}}')
+        listView: ListView,
+        template: EmberHandlebars.compile('{{#collection view.listView contentBinding="App.listController" tagName="table"}} <td>{{view.content.title}}</td> {{/collection}}')
       });
 
       run(function() {
@@ -12121,12 +12408,17 @@ define("ember-handlebars/tests/views/collection_view_test",
         lookup.App = App = Namespace.create();
       });
 
-      App.EmptyView = EmberView.extend({
+      var EmptyView = EmberView.extend({
         template: EmberHandlebars.compile('This is an empty view')
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{collection emptyViewClass="App.EmptyView"}}')
+        container: {
+          lookupFactory: function(){
+            return EmptyView;
+          }
+        },
+        template: EmberHandlebars.compile('{{collection emptyViewClass="empty-view"}}')
       });
 
       run(function() {
@@ -12141,13 +12433,14 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("if no content is passed, and no 'else' is specified, nothing is rendered", function() {
-      TemplateTests.CollectionTestView = CollectionView.extend({
+      var CollectionTestView = CollectionView.extend({
         tagName: 'ul',
         content: A()
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection "TemplateTests.CollectionTestView"}} <aside></aside> {{/collection}}')
+        collectionTestView: CollectionTestView,
+        template: EmberHandlebars.compile('{{#collection view.collectionTestView}} <aside></aside> {{/collection}}')
       });
 
       run(function() {
@@ -12158,13 +12451,14 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("if no content is passed, and 'else' is specified, the else block is rendered", function() {
-      TemplateTests.CollectionTestView = CollectionView.extend({
+      var CollectionTestView = CollectionView.extend({
         tagName: 'ul',
         content: A()
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection "TemplateTests.CollectionTestView"}} <aside></aside> {{ else }} <del></del> {{/collection}}')
+        collectionTestView: CollectionTestView,
+        template: EmberHandlebars.compile('{{#collection view.collectionTestView}} <aside></aside> {{ else }} <del></del> {{/collection}}')
       });
 
       run(function() {
@@ -12175,13 +12469,14 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("a block passed to a collection helper defaults to the content property of the context", function() {
-      TemplateTests.CollectionTestView = CollectionView.extend({
+      var CollectionTestView = CollectionView.extend({
         tagName: 'ul',
         content: A(['foo', 'bar', 'baz'])
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection "TemplateTests.CollectionTestView"}} <label>{{view.content}}</label> {{/collection}}')
+        collectionTestView: CollectionTestView,
+        template: EmberHandlebars.compile('{{#collection view.collectionTestView}} <label>{{view.content}}</label> {{/collection}}')
       });
 
       run(function() {
@@ -12197,13 +12492,14 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("a block passed to a collection helper defaults to the view", function() {
-      TemplateTests.CollectionTestView = CollectionView.extend({
+      var CollectionTestView = CollectionView.extend({
         tagName: 'ul',
         content: A(['foo', 'bar', 'baz'])
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection "TemplateTests.CollectionTestView"}} <label>{{view.content}}</label> {{/collection}}')
+        collectionTestView: CollectionTestView,
+        template: EmberHandlebars.compile('{{#collection view.collectionTestView}} <label>{{view.content}}</label> {{/collection}}')
       });
 
       run(function() {
@@ -12225,13 +12521,14 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("should include an id attribute if id is set in the options hash", function() {
-      TemplateTests.CollectionTestView = CollectionView.extend({
+      var CollectionTestView = CollectionView.extend({
         tagName: 'ul',
         content: A(['foo', 'bar', 'baz'])
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection "TemplateTests.CollectionTestView" id="baz"}}foo{{/collection}}')
+        collectionTestView: CollectionTestView,
+        template: EmberHandlebars.compile('{{#collection view.collectionTestView id="baz"}}foo{{/collection}}')
       });
 
       run(function() {
@@ -12242,12 +12539,13 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("should give its item views the class specified by itemClass", function() {
-      TemplateTests.itemClassTestCollectionView = CollectionView.extend({
+      var ItemClassTestCollectionView = CollectionView.extend({
         tagName: 'ul',
         content: A(['foo', 'bar', 'baz'])
       });
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection "TemplateTests.itemClassTestCollectionView" itemClass="baz"}}foo{{/collection}}')
+        itemClassTestCollectionView: ItemClassTestCollectionView,
+        template: EmberHandlebars.compile('{{#collection view.itemClassTestCollectionView itemClass="baz"}}foo{{/collection}}')
       });
 
       run(function() {
@@ -12258,14 +12556,15 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("should give its item views the classBinding specified by itemClassBinding", function() {
-      TemplateTests.itemClassBindingTestCollectionView = CollectionView.extend({
+      var ItemClassBindingTestCollectionView = CollectionView.extend({
         tagName: 'ul',
         content: A([EmberObject.create({ isBaz: false }), EmberObject.create({ isBaz: true }), EmberObject.create({ isBaz: true })])
       });
 
       view = EmberView.create({
+        itemClassBindingTestCollectionView: ItemClassBindingTestCollectionView,
         isBar: true,
-        template: EmberHandlebars.compile('{{#collection "TemplateTests.itemClassBindingTestCollectionView" itemClassBinding="view.isBar"}}foo{{/collection}}')
+        template: EmberHandlebars.compile('{{#collection view.itemClassBindingTestCollectionView itemClassBinding="view.isBar"}}foo{{/collection}}')
       });
 
       run(function() {
@@ -12279,7 +12578,7 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("should give its item views the property specified by itemPropertyBinding", function() {
-      TemplateTests.itemPropertyBindingTestItemView = EmberView.extend({
+      var ItemPropertyBindingTestItemView = EmberView.extend({
         tagName: 'li'
       });
 
@@ -12288,7 +12587,12 @@ define("ember-handlebars/tests/views/collection_view_test",
       view = EmberView.create({
         baz: "baz",
         content: A([EmberObject.create(), EmberObject.create(), EmberObject.create()]),
-        template: EmberHandlebars.compile('{{#collection contentBinding="view.content" tagName="ul" itemViewClass="TemplateTests.itemPropertyBindingTestItemView" itemPropertyBinding="view.baz" preserveContext=false}}{{view.property}}{{/collection}}')
+        container: {
+          lookupFactory: function(){
+            return ItemPropertyBindingTestItemView;
+          }
+        },
+        template: EmberHandlebars.compile('{{#collection contentBinding="view.content" tagName="ul" itemViewClass="item-property-binding-test-item-view" itemPropertyBinding="view.baz" preserveContext=false}}{{view.property}}{{/collection}}')
       });
 
       run(function() {
@@ -12310,13 +12614,14 @@ define("ember-handlebars/tests/views/collection_view_test",
 
     test("should work inside a bound {{#if}}", function() {
       var testData = A([EmberObject.create({ isBaz: false }), EmberObject.create({ isBaz: true }), EmberObject.create({ isBaz: true })]);
-      TemplateTests.ifTestCollectionView = CollectionView.extend({
+      var IfTestCollectionView = CollectionView.extend({
         tagName: 'ul',
         content: testData
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#if view.shouldDisplay}}{{#collection "TemplateTests.ifTestCollectionView"}}{{content.isBaz}}{{/collection}}{{/if}}'),
+        ifTestCollectionView: IfTestCollectionView,
+        template: EmberHandlebars.compile('{{#if view.shouldDisplay}}{{#collection view.ifTestCollectionView}}{{content.isBaz}}{{/collection}}{{/if}}'),
         shouldDisplay: true
       });
 
@@ -12353,13 +12658,14 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("should re-render when the content object changes", function() {
-      TemplateTests.RerenderTest = CollectionView.extend({
+      var RerenderTest = CollectionView.extend({
         tagName: 'ul',
         content: A()
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection TemplateTests.RerenderTest}}{{view.content}}{{/collection}}')
+        rerenderTestView: RerenderTest,
+        template: EmberHandlebars.compile('{{#collection view.rerenderTestView}}{{view.content}}{{/collection}}')
       });
 
       run(function() {
@@ -12380,12 +12686,13 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("select tagName on collection helper automatically sets child tagName to option", function() {
-      TemplateTests.RerenderTest = CollectionView.extend({
+      var RerenderTest = CollectionView.extend({
         content: A(['foo'])
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection TemplateTests.RerenderTest tagName="select"}}{{view.content}}{{/collection}}')
+        rerenderTestView: RerenderTest,
+        template: EmberHandlebars.compile('{{#collection view.rerenderTestView tagName="select"}}{{view.content}}{{/collection}}')
       });
 
       run(function() {
@@ -12397,12 +12704,13 @@ define("ember-handlebars/tests/views/collection_view_test",
     });
 
     test("tagName works in the #collection helper", function() {
-      TemplateTests.RerenderTest = CollectionView.extend({
+      var RerenderTest = CollectionView.extend({
         content: A(['foo', 'bar'])
       });
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection TemplateTests.RerenderTest tagName="ol"}}{{view.content}}{{/collection}}')
+        rerenderTestView: RerenderTest,
+        template: EmberHandlebars.compile('{{#collection view.rerenderTestView tagName="ol"}}{{view.content}}{{/collection}}')
       });
 
       run(function() {
@@ -12422,18 +12730,20 @@ define("ember-handlebars/tests/views/collection_view_test",
 
     test("should render nested collections", function() {
 
-      TemplateTests.InnerList = CollectionView.extend({
+      var container = new Container();
+      container.register('view:inner-list', CollectionView.extend({
         tagName: 'ul',
         content: A(['one','two','three'])
-      });
+      }));
 
-      TemplateTests.OuterList = CollectionView.extend({
+      container.register('view:outer-list', CollectionView.extend({
         tagName: 'ul',
         content: A(['foo'])
-      });
+      }));
 
       view = EmberView.create({
-        template: EmberHandlebars.compile('{{#collection TemplateTests.OuterList class="outer"}}{{content}}{{#collection TemplateTests.InnerList class="inner"}}{{content}}{{/collection}}{{/collection}}')
+        container: container,
+        template: EmberHandlebars.compile('{{#collection "outer-list" class="outer"}}{{content}}{{#collection "inner-list" class="inner"}}{{content}}{{/collection}}{{/collection}}')
       });
 
       run(function() {
@@ -12454,26 +12764,28 @@ define("ember-handlebars/tests/views/collection_view_test",
           content: A(['foo','bar'])
         });
 
-        TemplateTests.InnerList = CollectionView.extend({
+        var InnerList = CollectionView.extend({
           tagName: 'ul',
           contentBinding: 'parentView.innerListContent'
         });
 
-        TemplateTests.OuterListItem = EmberView.extend({
-          template: EmberHandlebars.compile('{{#collection TemplateTests.InnerList class="inner"}}{{content}}{{/collection}}{{content}}'),
+        var OuterListItem = EmberView.extend({
+          innerListView: InnerList,
+          template: EmberHandlebars.compile('{{#collection view.innerListView class="inner"}}{{content}}{{/collection}}{{content}}'),
           innerListContent: computed(function() {
             return A([1,2,3]);
           })
         });
 
-        TemplateTests.OuterList = CollectionView.extend({
+        var OuterList = CollectionView.extend({
           tagName: 'ul',
           contentBinding: 'TemplateTests.contentController',
-          itemViewClass: TemplateTests.OuterListItem
+          itemViewClass: OuterListItem
         });
 
         view = EmberView.create({
-          template: EmberHandlebars.compile('{{collection TemplateTests.OuterList class="outer"}}')
+          outerListView: OuterList,
+          template: EmberHandlebars.compile('{{collection view.outerListView class="outer"}}')
         });
       });
 
@@ -12497,20 +12809,21 @@ define("ember-handlebars/tests/views/collection_view_test",
       run(function() {
         TemplateTests.datasetController = EmberObject.create();
 
-        TemplateTests.ReportingView = EmberView.extend({
-          datasetBinding: 'TemplateTests.datasetController.dataset',
-          readyBinding: 'dataset.ready',
-          itemsBinding: 'dataset.items',
-          template: EmberHandlebars.compile("{{#if view.ready}}{{collection TemplateTests.CollectionView}}{{else}}Loading{{/if}}")
-        });
-
-        TemplateTests.CollectionView = CollectionView.extend({
+        var ExampleCollectionView = CollectionView.extend({
           contentBinding: 'parentView.items',
           tagName: 'ul',
           template: EmberHandlebars.compile("{{view.content}}")
         });
 
-        view = TemplateTests.ReportingView.create();
+        var ReportingView = EmberView.extend({
+          exampleCollectionView: ExampleCollectionView,
+          datasetBinding: 'TemplateTests.datasetController.dataset',
+          readyBinding: 'dataset.ready',
+          itemsBinding: 'dataset.items',
+          template: EmberHandlebars.compile("{{#if view.ready}}{{collection view.exampleCollectionView}}{{else}}Loading{{/if}}")
+        });
+
+        view = ReportingView.create();
       });
 
       run(function() {
@@ -12548,22 +12861,26 @@ define("ember-handlebars/tests/views/collection_view_test",
         lookup.App = App = Namespace.create();
       });
 
+      var container = new Container();
+
       App.items = A([
         EmberObject.create({name: 'Dave'}),
         EmberObject.create({name: 'Mary'}),
         EmberObject.create({name: 'Sara'})
       ]);
 
-      App.AnItemView = EmberView.extend({
+      container.register('view:an-item', EmberView.extend({
         template: EmberHandlebars.compile("Greetings {{name}}")
-      });
+      }));
 
       App.AView = EmberView.extend({
-        template: EmberHandlebars.compile('{{collection contentBinding="App.items" itemViewClass="App.AnItemView"}}')
+        template: EmberHandlebars.compile('{{collection contentBinding="App.items" itemViewClass="an-item"}}')
       });
 
       run(function() {
-        view = App.AView.create();
+        view = App.AView.create({
+          container: container
+        });
       });
 
       run(function() {
@@ -13623,7 +13940,8 @@ define("ember-metal/tests/accessors/getPath_test",
 
     var get = __dependency1__.get;
 
-    var obj, moduleOpts = {
+    var obj;
+    var moduleOpts = {
       setup: function() {
         obj = {
           foo: {
@@ -13979,7 +14297,8 @@ define("ember-metal/tests/accessors/normalizeTuple_test",
     /*globals Foo:true, $foo:true */
     var normalizeTuple = __dependency1__.normalizeTuple;
 
-    var obj, moduleOpts = {
+    var obj;
+    var moduleOpts = {
       setup: function() {
         obj = {
           foo: {
@@ -14098,7 +14417,8 @@ define("ember-metal/tests/accessors/setPath_test",
 
     var originalLookup = Ember.lookup;
 
-    var obj, moduleOpts = {
+    var obj;
+    var moduleOpts = {
       setup: function() {
         obj = {
           foo: {
@@ -14591,7 +14911,9 @@ define("ember-metal/tests/binding/sync_test",
     QUnit.module("system/binding/sync_test.js");
 
     testBoth("bindings should not sync twice in a single run loop", function(get, set) {
-      var a, b, setValue, setCalled=0, getCalled=0;
+      var a, b, setValue;
+      var setCalled=0;
+      var getCalled=0;
 
       run(function() {
         a = {};
@@ -14626,7 +14948,8 @@ define("ember-metal/tests/binding/sync_test",
     });
 
     testBoth("bindings should not infinite loop if computed properties return objects", function(get, set) {
-      var a, b, getCalled=0;
+      var a, b;
+      var getCalled=0;
 
       run(function() {
         a = {};
@@ -14820,8 +15143,8 @@ define("ember-metal/tests/computed_test",
     var addBeforeObserver = __dependency10__.addBeforeObserver;
     var indexOf = __dependency11__.indexOf;
 
-    var originalLookup = Ember.lookup, lookup;
-    var obj, count, Global;
+    var originalLookup = Ember.lookup;
+    var obj, count, Global, lookup;
 
     QUnit.module('computed');
 
@@ -15249,7 +15572,8 @@ define("ember-metal/tests/computed_test",
     //
 
 
-    var func, moduleOpts = {
+    var func;
+    var moduleOpts = {
       setup: function() {
         originalLookup = Ember.lookup;
         lookup = Ember.lookup = {};
@@ -15410,7 +15734,8 @@ define("ember-metal/tests/computed_test",
     });
 
     testBoth("when setting a value after it had been retrieved empty don't pass function UNDEFINED as oldValue", function(get, set) {
-        var obj = {}, oldValueIsNoFunction = true;
+        var obj = {};
+        var oldValueIsNoFunction = true;
 
         defineProperty(obj, 'foo', computed(function(key, value, oldValue) {
             if(typeof oldValue === 'function') {
@@ -15444,12 +15769,12 @@ define("ember-metal/tests/computed_test",
           return get(this, 'firstName') + ' ' + get(this, 'lastName');
         }).property('firstName', 'lastName')
       );
-      var fullNameWillChange = 0,
-          fullNameDidChange = 0,
-          firstNameWillChange = 0,
-          firstNameDidChange = 0,
-          lastNameWillChange = 0,
-          lastNameDidChange = 0;
+      var fullNameWillChange = 0;
+      var fullNameDidChange = 0;
+      var firstNameWillChange = 0;
+      var firstNameDidChange = 0;
+      var lastNameWillChange = 0;
+      var lastNameDidChange = 0;
       addBeforeObserver(obj, 'fullName', function () {
         fullNameWillChange++;
       });
@@ -15500,8 +15825,8 @@ define("ember-metal/tests/computed_test",
           return get(this, 'foo') + 1;
         }).property('foo')
       );
-      var plusOneWillChange = 0,
-          plusOneDidChange = 0;
+      var plusOneWillChange = 0;
+      var plusOneDidChange = 0;
       addBeforeObserver(obj, 'plusOne', function () {
         plusOneWillChange++;
       });
@@ -15528,7 +15853,8 @@ define("ember-metal/tests/computed_test",
     QUnit.module('computed - default setter');
 
     testBoth("when setting a value on a computed property that doesn't handle sets", function(get, set) {
-      var obj = {}, observerFired = false;
+      var obj = {};
+      var observerFired = false;
 
       defineProperty(obj, 'foo', computed(function() {
         return 'foo';
@@ -16025,7 +16351,9 @@ define("ember-metal/tests/enumerable_utils_test",
     QUnit.module('Ember.EnumerableUtils.intersection');
 
     test('returns an array of objects that appear in both enumerables', function() {
-      var a = [1,2,3], b = [2,3,4], result;
+      var a = [1,2,3];
+      var b = [2,3,4];
+      var result;
 
       result = EnumerableUtils.intersection(a, b);
 
@@ -16096,7 +16424,8 @@ define("ember-metal/tests/events_test",
     QUnit.module('system/props/events_test');
 
     test('listener should receive event - removing should remove', function() {
-      var obj = {}, count = 0;
+      var obj = {};
+      var count = 0;
       var F = function() { count++; };
 
       addListener(obj, 'event!', F);
@@ -16113,7 +16442,8 @@ define("ember-metal/tests/events_test",
     });
 
     test('listeners should be inherited', function() {
-      var obj = {}, count = 0;
+      var obj = {};
+      var count = 0;
       var F = function() { count++; };
 
       addListener(obj, 'event!', F);
@@ -16139,7 +16469,8 @@ define("ember-metal/tests/events_test",
 
     test('adding a listener more than once should only invoke once', function() {
 
-      var obj = {}, count = 0;
+      var obj = {};
+      var count = 0;
       var F = function() { count++; };
       addListener(obj, 'event!', F);
       addListener(obj, 'event!', F);
@@ -16149,7 +16480,8 @@ define("ember-metal/tests/events_test",
     });
 
     test('adding a listener with a target should invoke with target', function() {
-      var obj = {}, target;
+      var obj = {};
+      var target;
 
       target = {
         count: 0,
@@ -16162,7 +16494,8 @@ define("ember-metal/tests/events_test",
     });
 
     test('suspending a listener should not invoke during callback', function() {
-      var obj = {}, target, otherTarget;
+      var obj = {};
+      var target, otherTarget;
 
       target = {
         count: 0,
@@ -16197,7 +16530,8 @@ define("ember-metal/tests/events_test",
     });
 
     test('adding a listener with string method should lookup method on event delivery', function() {
-      var obj = {}, target;
+      var obj = {};
+      var target;
 
       target = {
         count: 0,
@@ -16215,7 +16549,8 @@ define("ember-metal/tests/events_test",
 
     test('calling sendEvent with extra params should be passed to listeners', function() {
 
-      var obj = {}, params = null;
+      var obj = {};
+      var params = null;
       addListener(obj, 'event!', function() {
         params = Array.prototype.slice.call(arguments);
       });
@@ -16243,7 +16578,9 @@ define("ember-metal/tests/events_test",
 
     test('hasListeners tells you if there are listeners for a given event', function() {
 
-      var obj = {}, F = function() {}, F2 = function() {};
+      var obj = {};
+      var F = function() {};
+      var F2 = function() {};
 
       equal(hasListeners(obj, 'event!'), false, 'no listeners at first');
 
@@ -16263,7 +16600,9 @@ define("ember-metal/tests/events_test",
     });
 
     test('calling removeListener without method should remove all listeners', function() {
-      var obj = {}, F = function() {}, F2 = function() {};
+      var obj = {};
+      var F = function() {};
+      var F2 = function() {};
 
       equal(hasListeners(obj, 'event!'), false, 'no listeners at first');
 
@@ -16278,7 +16617,8 @@ define("ember-metal/tests/events_test",
     });
 
     test('while suspended, it should not be possible to add a duplicate listener', function() {
-      var obj = {}, target;
+      var obj = {};
+      var target;
 
       target = {
         count: 0,
@@ -16417,7 +16757,7 @@ define("ember-metal/tests/expand_properties_test",
       });
     }
 
-    if (Ember.FEATURES.isEnabled('property-brace-expansion-improvement')) {
+    
       test('Expansions with single properties only expand once', function() {
         expect(1);
 
@@ -16452,7 +16792,7 @@ define("ember-metal/tests/expand_properties_test",
         var expected = ['a.d.e', 'a.d.f', 'b.d.e', 'b.d.f', 'c.d.e', 'c.d.f'];
         deepEqual(expected.sort(), foundProperties.sort());
       });
-    }
+    
   });
 define("ember-metal/tests/expand_properties_test.jshint",
   [],
@@ -16469,8 +16809,8 @@ define("ember-metal/tests/features_test",
     "use strict";
     var Ember = __dependency1__["default"];
 
-    var isEnabled = Ember.FEATURES.isEnabled,
-        origFeatures, origEnableAll, origEnableOptional;
+    var isEnabled = Ember.FEATURES.isEnabled;
+    var origFeatures, origEnableAll, origEnableOptional;
 
     QUnit.module("Ember.FEATURES.isEnabled", {
       setup: function(){
@@ -16552,7 +16892,8 @@ define("ember-metal/tests/instrumentation_test",
     test("subscribing to a simple path receives the listener", function() {
       expect(12);
 
-      var sentPayload = {}, count = 0;
+      var sentPayload = {};
+      var count = 0;
 
       subscribe("render", {
         before: function(name, timestamp, payload) {
@@ -16592,7 +16933,8 @@ define("ember-metal/tests/instrumentation_test",
     test("returning a value from the before callback passes it to the after callback", function() {
       expect(2);
 
-      var passthru1 = {}, passthru2 = {};
+      var passthru1 = {};
+      var passthru2 = {};
 
       subscribe("render", {
         before: function(name, timestamp, payload) {
@@ -16696,8 +17038,9 @@ define("ember-metal/tests/is_blank_test",
     QUnit.module("Ember.isBlank");
 
     test("Ember.isBlank", function() {
-      var string = "string", fn = function() {},
-      object = {length: 0};
+      var string = "string";
+      var fn = function() {};
+      var object = {length: 0};
 
       equal(true,  isBlank(null),      "for null");
       equal(true,  isBlank(undefined), "for undefined");
@@ -16734,8 +17077,9 @@ define("ember-metal/tests/is_empty_test",
     QUnit.module("Ember.isEmpty");
 
     test("Ember.isEmpty", function() {
-      var string = "string", fn = function() {},
-          object = {length: 0};
+      var string = "string";
+      var fn = function() {};
+      var object = {length: 0};
 
       equal(true,  isEmpty(null),      "for null");
       equal(true,  isEmpty(undefined), "for undefined");
@@ -16768,7 +17112,8 @@ define("ember-metal/tests/is_none_test",
     QUnit.module("Ember.isNone");
 
     test("Ember.isNone", function() {
-      var string = "string", fn = function() {};
+      var string = "string";
+      var fn = function() {};
 
       equal(true,  isNone(null),      "for null");
       equal(true,  isNone(undefined), "for undefined");
@@ -16797,12 +17142,13 @@ define("ember-metal/tests/is_present_test",
     "use strict";
     var isPresent = __dependency1__["default"];
 
-    if (Ember.FEATURES.isEnabled('ember-metal-is-present')) {
+    
       QUnit.module("Ember.isPresent");
 
       test("Ember.isPresent", function() {
-        var string = "string", fn = function() {},
-        object = {length: 0};
+        var string = "string";
+        var fn = function() {};
+        var object = {length: 0};
 
         equal(false, isPresent(),          "for no params");
         equal(false, isPresent(null),      "for null");
@@ -16821,7 +17167,7 @@ define("ember-metal/tests/is_present_test",
         equal(false, isPresent(object),    "for an Object that has zero 'length'");
         equal(true,  isPresent([1,2,3]),   "for a non-empty array");
       });
-    }
+    
   });
 define("ember-metal/tests/is_present_test.jshint",
   [],
@@ -16948,9 +17294,8 @@ define("ember-metal/tests/map_test",
     var Map = __dependency1__.Map;
     var MapWithDefault = __dependency1__.MapWithDefault;
 
-    var object, number, string, map;
-
-    var varieties = [['Map', Map], ['MapWithDefault', MapWithDefault]], variety;
+    var object, number, string, map, variety;
+    var varieties = [['Map', Map], ['MapWithDefault', MapWithDefault]];
 
     function testMap(nameAndFunc) {
       variety = nameAndFunc[0];
@@ -17373,8 +17718,8 @@ define("ember-metal/tests/mixin/computed_test",
       var SuperMixin, SubMixin;
       var obj;
 
-      var superGetOccurred = false,
-          superSetOccurred = false;
+      var superGetOccurred = false;
+      var superSetOccurred = false;
 
       SuperMixin = Mixin.create({
         aProp: computed(function(key, val) {
@@ -18488,7 +18833,8 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('observer should continue to fire after dependent properties are accessed', function(get, set) {
-      var observerCount = 0, obj = {};
+      var observerCount = 0;
+      var obj = {};
 
       defineProperty(obj, 'prop', Ember.computed(function () { return Math.random(); }));
       defineProperty(obj, 'anotherProp', Ember.computed('prop', function () { return get(this, 'prop') + Math.random(); }));
@@ -18603,7 +18949,8 @@ define("ember-metal/tests/observer_test",
 
     testBoth('nested observers should fire in order', function(get,set) {
       var obj = { foo: 'foo', bar: 'bar' };
-      var fooCount = 0, barCount = 0;
+      var fooCount = 0;
+      var barCount = 0;
 
       addObserver(obj, 'foo' ,function() { fooCount++; });
       addObserver(obj, 'bar', function() {
@@ -18619,9 +18966,16 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('removing an chain observer on change should not fail', function(get,set) {
-      var foo = { bar: 'bar' },
-        obj1 = { foo: foo }, obj2 = { foo: foo }, obj3 = { foo: foo }, obj4 = { foo: foo },
-        count1=0, count2=0, count3=0, count4=0;
+      var foo = { bar: 'bar' };
+      var obj1 = { foo: foo };
+      var obj2 = { foo: foo };
+      var obj3 = { foo: foo };
+      var obj4 = { foo: foo };
+      var count1=0;
+      var count2=0;
+      var count3=0;
+      var count4=0;
+
       function observer1() { count1++; }
       function observer2() { count2++; }
       function observer3() {
@@ -18646,9 +19000,16 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('removing an chain before observer on change should not fail', function(get,set) {
-      var foo = { bar: 'bar' },
-        obj1 = { foo: foo }, obj2 = { foo: foo }, obj3 = { foo: foo }, obj4 = { foo: foo },
-        count1=0, count2=0, count3=0, count4=0;
+      var foo = { bar: 'bar' };
+      var obj1 = { foo: foo };
+      var obj2 = { foo: foo };
+      var obj3 = { foo: foo };
+      var obj4 = { foo: foo };
+      var count1=0;
+      var count2=0;
+      var count3=0;
+      var count4=0;
+
       function observer1() { count1++; }
       function observer2() { count2++; }
       function observer3() {
@@ -18673,7 +19034,8 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('suspending an observer should not fire during callback', function(get,set) {
-      var obj = {}, target, otherTarget;
+      var obj = {};
+      var target, otherTarget;
 
       target = {
         values: [],
@@ -18709,7 +19071,8 @@ define("ember-metal/tests/observer_test",
 
 
     testBoth('suspending an observer should not defer change notifications during callback', function(get,set) {
-      var obj = {}, target, otherTarget;
+      var obj = {};
+      var target, otherTarget;
 
       target = {
         values: [],
@@ -18746,7 +19109,8 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('suspending observers should not fire during callback', function(get,set) {
-      var obj = {}, target, otherTarget;
+      var obj = {};
+      var target, otherTarget;
 
       target = {
         values: [],
@@ -18782,7 +19146,8 @@ define("ember-metal/tests/observer_test",
 
 
     testBoth('suspending observers should not defer change notifications during callback', function(get,set) {
-      var obj = {}, target, otherTarget;
+      var obj = {};
+      var target, otherTarget;
 
       target = {
         values: [],
@@ -18877,7 +19242,8 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('implementing sendEvent on object should invoke when deferring property change notifications ends', function(get, set) {
-      var count = 0, events = [];
+      var count = 0;
+      var events = [];
       var obj = {
         sendEvent: function(eventName) {
           events.push(eventName);
@@ -18902,7 +19268,8 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('addObserver should propagate through prototype', function(get,set) {
-      var obj = { foo: 'foo', count: 0 }, obj2;
+      var obj = { foo: 'foo', count: 0 };
+      var obj2;
 
       addObserver(obj, 'foo', function() { this.count++; });
       obj2 = create(obj);
@@ -19201,7 +19568,8 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('addBeforeObserver should propagate through prototype', function(get,set) {
-      var obj = { foo: 'foo', count: 0 }, obj2;
+      var obj = { foo: 'foo', count: 0 };
+      var obj2;
 
       addBeforeObserver(obj, 'foo', function() { this.count++; });
       obj2 = create(obj);
@@ -19258,8 +19626,8 @@ define("ember-metal/tests/observer_test",
     // CHAINED OBSERVERS
     //
 
-    var obj, count;
-    var originalLookup = Ember.lookup, lookup;
+    var obj, count, lookup;
+    var originalLookup = Ember.lookup;
 
     QUnit.module('addObserver - dependentkey with chained properties', {
       setup: function() {
@@ -19351,7 +19719,8 @@ define("ember-metal/tests/observer_test",
     });
 
     testBoth('depending on a Global chain', function(get, set) {
-      var Global = lookup.Global, val;
+      var Global = lookup.Global;
+      var val;
 
       addObserver(obj, 'Global.foo.bar.baz.biff', function(target, key) {
         val = get(lookup, key);
@@ -19445,9 +19814,9 @@ define("ember-metal/tests/observer_test",
     QUnit.module("Ember.immediateObserver");
 
     testBoth("immediate observers should fire synchronously", function(get, set) {
-      var obj = {},
-          observerCalled = 0,
-          mixin;
+      var obj = {};
+      var observerCalled = 0;
+      var mixin;
 
       // explicitly create a run loop so we do not inadvertently
       // trigger deferred behavior
@@ -19480,9 +19849,9 @@ define("ember-metal/tests/observer_test",
 
     if (Ember.EXTEND_PROTOTYPES) {
       testBoth('immediate observers added declaratively via brace expansion fire synchronously', function (get, set) {
-        var obj = {},
-        observerCalled = 0,
-        mixin;
+        var obj = {};
+        var observerCalled = 0;
+        var mixin;
 
         // explicitly create a run loop so we do not inadvertently
         // trigger deferred behavior
@@ -19514,9 +19883,9 @@ define("ember-metal/tests/observer_test",
     }
 
     testBoth('immediate observers watching multiple properties via brace expansion fire synchronously', function (get, set) {
-      var obj = {},
-      observerCalled = 0,
-      mixin;
+      var obj = {};
+      var observerCalled = 0;
+      var mixin;
 
       // explicitly create a run loop so we do not inadvertently
       // trigger deferred behavior
@@ -19655,7 +20024,8 @@ define("ember-metal/tests/performance_test",
 
     test("computed properties that depend on multiple properties should run only once per run loop", function() {
       var obj = {a: 'a', b: 'b', c: 'c'};
-      var cpCount = 0, obsCount = 0;
+      var cpCount = 0;
+      var obsCount = 0;
 
       defineProperty(obj, 'abc', computed(function(key) {
         cpCount++;
@@ -19840,7 +20210,10 @@ define("ember-metal/tests/platform/defineProperty_test",
     // and setters don't do anything
     if (platform.hasPropertyAccessors) {
       test('defining a getter/setter', function() {
-        var obj = {}, getCnt = 0, setCnt = 0, v = 'FOO';
+        var obj = {};
+        var getCnt = 0;
+        var setCnt = 0;
+        var v = 'FOO';
 
         var desc = {
           enumerable: true,
@@ -20141,8 +20514,8 @@ define("ember-metal/tests/run_loop/join_test",
     });
 
     test('run.join returns undefined if joining another run-loop', function() {
-      var value = 'returned value',
-      result;
+      var value = 'returned value';
+      var result;
 
       run(function() {
         var result = run.join(function() {
@@ -20236,7 +20609,8 @@ define("ember-metal/tests/run_loop/later_test",
     });
 
     asyncTest('should always invoke within a separate runloop', function() {
-      var obj = { invoked: 0 }, firstRunLoop, secondRunLoop;
+      var obj = { invoked: 0 };
+      var firstRunLoop, secondRunLoop;
 
       run(function() {
         firstRunLoop = run.currentRunLoop;
@@ -20496,7 +20870,8 @@ define("ember-metal/tests/run_loop/once_test",
 
     test('should differentiate based on target', function() {
 
-      var A = { count: 0 }, B = { count: 0 };
+      var A = { count: 0 };
+      var B = { count: 0 };
       run(function() {
         var F = function() { this.count++; };
         run.once(A, F);
@@ -20512,7 +20887,8 @@ define("ember-metal/tests/run_loop/once_test",
 
     test('should ignore other arguments - replacing previous ones', function() {
 
-      var A = { count: 0 }, B = { count: 0 };
+      var A = { count: 0 };
+      var B = { count: 0 };
       run(function() {
         var F = function(amt) { this.count += amt; };
         run.once(A, F, 10);
@@ -20553,8 +20929,8 @@ define("ember-metal/tests/run_loop/onerror_test",
     QUnit.module('system/run_loop/onerror_test');
 
     test('With Ember.onerror undefined, errors in Ember.run are thrown', function () {
-      var thrown = new Error('Boom!'),
-          caught;
+      var thrown = new Error('Boom!');
+      var caught;
 
       try {
         run(function() { throw thrown; });
@@ -20566,8 +20942,8 @@ define("ember-metal/tests/run_loop/onerror_test",
     });
 
     test('With Ember.onerror set, errors in Ember.run are caught', function () {
-      var thrown = new Error('Boom!'),
-          caught;
+      var thrown = new Error('Boom!');
+      var caught;
 
       Ember.onerror = function(error) { caught = error; };
 
@@ -20953,7 +21329,8 @@ define("ember-metal/tests/utils/guidFor_test",
     };
 
     test("Object", function() {
-      var a = {}, b = {};
+      var a = {};
+      var b = {};
 
       sameGuid( a, a, "same object always yields same guid" );
       diffGuid( a, b, "different objects yield different guids" );
@@ -20977,7 +21354,9 @@ define("ember-metal/tests/utils/guidFor_test",
     });
 
     test("strings", function() {
-      var a = "string A", aprime = "string A", b = "String B";
+      var a = "string A";
+      var aprime = "string A";
+      var b = "String B";
 
       sameGuid( a, a,      "same string always yields same guid" );
       sameGuid( a, aprime, "identical strings always yield the same guid" );
@@ -20986,7 +21365,9 @@ define("ember-metal/tests/utils/guidFor_test",
     });
 
     test("numbers", function() {
-      var a = 23, aprime = 23, b = 34;
+      var a = 23;
+      var aprime = 23;
+      var b = 34;
 
       sameGuid( a, a,      "same numbers always yields same guid" );
       sameGuid( a, aprime, "identical numbers always yield the same guid" );
@@ -20995,7 +21376,9 @@ define("ember-metal/tests/utils/guidFor_test",
     });
 
     test("numbers", function() {
-      var a = true, aprime = true, b = false;
+      var a = true;
+      var aprime = true;
+      var b = false;
 
       sameGuid( a, a,      "same booleans always yields same guid" );
       sameGuid( a, aprime, "identical booleans always yield the same guid" );
@@ -21005,7 +21388,9 @@ define("ember-metal/tests/utils/guidFor_test",
     });
 
     test("null and undefined", function() {
-      var a = null, aprime = null, b;
+      var a = null;
+      var aprime = null;
+      var b;
 
       sameGuid( a, a,      "null always returns the same guid" );
       sameGuid( b, b,      "undefined always returns the same guid" );
@@ -21016,7 +21401,9 @@ define("ember-metal/tests/utils/guidFor_test",
     });
 
     test("arrays", function() {
-      var a = ["a", "b", "c"], aprime = ["a", "b", "c"], b = ["1", "2", "3"];
+      var a = ["a", "b", "c"];
+      var aprime = ["a", "b", "c"];
+      var b = ["1", "2", "3"];
 
       sameGuid( a, a,      "same instance always yields same guid" );
       diffGuid( a, aprime, "identical arrays always yield the same guid" );
@@ -21043,13 +21430,13 @@ define("ember-metal/tests/utils/is_array_test",
     var global = this;
 
     test("Ember.isArray" ,function() {
-      var numarray      = [1,2,3],
-          number        = 23,
-          strarray      = ["Hello", "Hi"],
-          string        = "Hello",
-          object        = {},
-          length        = {length: 12},
-          fn            = function() {};
+      var numarray      = [1,2,3];
+      var number        = 23;
+      var strarray      = ["Hello", "Hi"];
+      var string        = "Hello";
+      var object        = {};
+      var length        = {length: 12};
+      var fn            = function() {};
 
       equal( isArray(numarray), true,  "[1,2,3]" );
       equal( isArray(number),   false, "23" );
@@ -21452,10 +21839,10 @@ define("ember-metal/tests/utils/type_of_test",
       var MockedDate = function() { };
       MockedDate.prototype = new Date();
 
-      var mockedDate  = new MockedDate(),
-          date        = new Date(),
-          error       = new Error('boum'),
-          object      = {a: 'b'};
+      var mockedDate  = new MockedDate();
+      var date        = new Date();
+      var error       = new Error('boum');
+      var object      = {a: 'b'};
 
       equal( typeOf(),            'undefined',  "undefined");
       equal( typeOf(null),        'null',       "null");
@@ -21470,8 +21857,8 @@ define("ember-metal/tests/utils/type_of_test",
       equal( typeOf(object),      'object',     "object");
 
       if(Ember.Object) {
-        var klass       = Ember.Object.extend(),
-            instance    = Ember.Object.create();
+        var klass       = Ember.Object.extend();
+        var instance    = Ember.Object.create();
 
         equal( Ember.typeOf(klass),     'class',      "class");
         equal( Ember.typeOf(instance),  'instance',   "instance");
@@ -21502,7 +21889,8 @@ define("ember-metal/tests/watching/isWatching_test",
     QUnit.module('isWatching');
 
     function testObserver(setup, teardown, key) {
-      var obj = {}, fn = function() {};
+      var obj = {};
+      var fn = function() {};
       key = key || 'foo';
 
       equal(isWatching(obj, key), false, "precond - isWatching is false by default");
@@ -22081,31 +22469,32 @@ define("ember-routing-handlebars/helpers/shared.jshint",
     });
   });
 define("ember-routing-handlebars/tests/helpers/action_test",
-  ["ember-metal/core","ember-metal/property_set","ember-metal/run_loop","ember-views/system/event_dispatcher","ember-runtime/system/container","ember-runtime/system/object","ember-runtime/controllers/controller","ember-runtime/controllers/object_controller","ember-runtime/controllers/array_controller","ember-handlebars","ember-views/views/view","ember-views/views/component","ember-views/system/jquery","ember-routing-handlebars/helpers/shared","ember-routing-handlebars/helpers/action"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__) {
+  ["ember-metal/core","ember-metal/property_set","ember-metal/run_loop","ember-views/system/event_dispatcher","ember-views/system/action_manager","ember-runtime/system/container","ember-runtime/system/object","ember-runtime/controllers/controller","ember-runtime/controllers/object_controller","ember-runtime/controllers/array_controller","ember-handlebars","ember-views/views/view","ember-views/views/component","ember-views/system/jquery","ember-routing-handlebars/helpers/shared","ember-routing-handlebars/helpers/action"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__, __dependency16__) {
     "use strict";
     var Ember = __dependency1__["default"];
     // A, FEATURES, assert, TESTING_DEPRECATION
     var set = __dependency2__.set;
     var run = __dependency3__["default"];
     var EventDispatcher = __dependency4__["default"];
+    var ActionManager = __dependency5__["default"];
 
-    var Container = __dependency5__["default"];
-    var EmberObject = __dependency6__["default"];
-    var EmberController = __dependency7__["default"];
-    var EmberObjectController = __dependency8__["default"];
-    var EmberArrayController = __dependency9__["default"];
+    var Container = __dependency6__["default"];
+    var EmberObject = __dependency7__["default"];
+    var EmberController = __dependency8__["default"];
+    var EmberObjectController = __dependency9__["default"];
+    var EmberArrayController = __dependency10__["default"];
 
-    var EmberHandlebars = __dependency10__["default"];
-    var EmberView = __dependency11__["default"];
-    var EmberComponent = __dependency12__["default"];
-    var jQuery = __dependency13__["default"];
+    var EmberHandlebars = __dependency11__["default"];
+    var EmberView = __dependency12__["default"];
+    var EmberComponent = __dependency13__["default"];
+    var jQuery = __dependency14__["default"];
 
-    var ActionHelper = __dependency15__.ActionHelper;
-    var actionHelper = __dependency15__.actionHelper;
+    var ActionHelper = __dependency16__.ActionHelper;
+    var actionHelper = __dependency16__.actionHelper;
 
-    var dispatcher, view, originalActionHelper,
-        originalRegisterAction = ActionHelper.registerAction;
+    var dispatcher, view, originalActionHelper;
+    var originalRegisterAction = ActionHelper.registerAction;
 
     var appendView = function() {
       run(function() { view.appendTo('#qunit-fixture'); });
@@ -22128,8 +22517,6 @@ define("ember-routing-handlebars/tests/helpers/action_test",
 
         delete EmberHandlebars.helpers['action'];
         EmberHandlebars.helpers['action'] = originalActionHelper;
-
-        Ember.TESTING_DEPRECATION = false;
       }
     });
 
@@ -22180,7 +22567,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("should by default target the view's controller", function() {
-      var registeredTarget, controller = {};
+      var registeredTarget;
+      var controller = {};
 
       ActionHelper.registerAction = function(actionName, options) {
         registeredTarget = options.target;
@@ -22199,7 +22587,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("Inside a yield, the target points at the original target", function() {
-      var controller = {}, watted = false;
+      var controller = {};
+      var watted = false;
 
       var component = EmberComponent.extend({
         boundText: "inner",
@@ -22356,8 +22745,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("should lazily evaluate the target", function() {
-      var firstEdit = 0, secondEdit = 0;
-
+      var firstEdit = 0;
+      var secondEdit = 0;
       var controller = {};
       var first = {
         edit: function() {
@@ -22412,7 +22801,7 @@ define("ember-routing-handlebars/tests/helpers/action_test",
 
       var actionId = view.$('a[data-ember-action]').attr('data-ember-action');
 
-      ok(ActionHelper.registeredActions[actionId], "The action was registered");
+      ok(ActionManager.registeredActions[actionId], "The action was registered");
 
       view.$('a').trigger('click');
 
@@ -22420,7 +22809,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("handles whitelisted modifier keys", function() {
-      var eventHandlerWasCalled = false, shortcutHandlerWasCalled = false;
+      var eventHandlerWasCalled = false;
+      var shortcutHandlerWasCalled = false;
 
       var controller = EmberController.extend({
         actions: {
@@ -22438,7 +22828,7 @@ define("ember-routing-handlebars/tests/helpers/action_test",
 
       var actionId = view.$('a[data-ember-action]').attr('data-ember-action');
 
-      ok(ActionHelper.registeredActions[actionId], "The action was registered");
+      ok(ActionManager.registeredActions[actionId], "The action was registered");
 
       var e = jQuery.Event('click');
       e.altKey = true;
@@ -22454,9 +22844,9 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("should be able to use action more than once for the same event within a view", function() {
-      var editWasCalled = false,
-          deleteWasCalled = false,
-          originalEventHandlerWasCalled = false;
+      var editWasCalled = false;
+      var deleteWasCalled = false;
+      var originalEventHandlerWasCalled = false;
 
       var controller = EmberController.extend({
         actions: {
@@ -22496,9 +22886,9 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("the event should not bubble if `bubbles=false` is passed", function() {
-      var editWasCalled = false,
-          deleteWasCalled = false,
-          originalEventHandlerWasCalled = false;
+      var editWasCalled = false;
+      var deleteWasCalled = false;
+      var originalEventHandlerWasCalled = false;
 
       var controller = EmberController.extend({
         actions: {
@@ -22596,11 +22986,11 @@ define("ember-routing-handlebars/tests/helpers/action_test",
         view.rerender();
       });
 
-      ok(!ActionHelper.registeredActions[previousActionId], "On rerender, the event handler was removed");
+      ok(!ActionManager.registeredActions[previousActionId], "On rerender, the event handler was removed");
 
       var newActionId = view.$('a[data-ember-action]').attr('data-ember-action');
 
-      ok(ActionHelper.registeredActions[newActionId], "After rerender completes, a new event handler was added");
+      ok(ActionManager.registeredActions[newActionId], "After rerender completes, a new event handler was added");
     });
 
     test("should unregister event handlers on inside virtual views", function() {
@@ -22622,7 +23012,7 @@ define("ember-routing-handlebars/tests/helpers/action_test",
         things.removeAt(0);
       });
 
-      ok(!ActionHelper.registeredActions[actionId], "After the virtual view was destroyed, the action was unregistered");
+      ok(!ActionManager.registeredActions[actionId], "After the virtual view was destroyed, the action was unregistered");
     });
 
     test("should properly capture events on child elements of a container with an action", function() {
@@ -22645,8 +23035,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("should allow bubbling of events from action helper to original parent event", function() {
-      var eventHandlerWasCalled = false,
-          originalEventHandlerWasCalled = false;
+      var eventHandlerWasCalled = false;
+      var originalEventHandlerWasCalled = false;
 
       var controller = EmberController.extend({
         actions: { edit: function() { eventHandlerWasCalled = true; } }
@@ -22666,8 +23056,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("should not bubble an event from action helper to original parent event if `bubbles=false` is passed", function() {
-      var eventHandlerWasCalled = false,
-          originalEventHandlerWasCalled = false;
+      var eventHandlerWasCalled = false;
+      var originalEventHandlerWasCalled = false;
 
       var controller = EmberController.extend({
         actions: { edit: function() { eventHandlerWasCalled = true; } }
@@ -22752,16 +23142,16 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("should unwrap controllers passed as a context", function() {
-      var passedContext,
-          model = EmberObject.create(),
-          controller = EmberObjectController.extend({
-            model: model,
-            actions: {
-              edit: function(context) {
-                passedContext = context;
-              }
-            }
-          }).create();
+      var passedContext;
+      var model = EmberObject.create();
+      var controller = EmberObjectController.extend({
+        model: model,
+        actions: {
+          edit: function(context) {
+            passedContext = context;
+          }
+        }
+      }).create();
 
       view = EmberView.create({
         controller: controller,
@@ -22776,8 +23166,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("should allow multiple contexts to be specified", function() {
-      var passedContexts,
-          models = [EmberObject.create(), EmberObject.create()];
+      var passedContexts;
+      var models = [EmberObject.create(), EmberObject.create()];
 
       var controller = EmberController.extend({
         actions: {
@@ -22802,8 +23192,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("should allow multiple contexts to be specified mixed with string args", function() {
-      var passedParams,
-          model = EmberObject.create();
+      var passedParams;
+      var model = EmberObject.create();
 
       var controller = EmberController.extend({
         actions: {
@@ -22982,7 +23372,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     }
     test("a quoteless parameter should allow dynamic lookup of the actionName", function(){
       expect(4);
-      var lastAction, actionOrder = [];
+      var lastAction;
+      var actionOrder = [];
 
       view = EmberView.create({
         template: compile("<a id='woot-bound-param'' {{action hookMeUp}}>Hi</a>")
@@ -23030,7 +23421,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
 
     test("a quoteless parameter should lookup actionName in context", function(){
       expect(4);
-      var lastAction, actionOrder = [];
+      var lastAction;
+      var actionOrder = [];
 
       view = EmberView.create({
         template: compile("{{#each allactions}}<a {{bind-attr id='name'}} {{action name}}>{{title}}</a>{{/each}}")
@@ -23078,7 +23470,8 @@ define("ember-routing-handlebars/tests/helpers/action_test",
 
     test("a quoteless parameter should resolve actionName, including path", function(){
       expect(4);
-      var lastAction, actionOrder = [];
+      var lastAction;
+      var actionOrder = [];
 
       view = EmberView.create({
         template: compile("{{#each item in allactions}}<a {{bind-attr id='item.name'}} {{action item.name}}>{{item.title}}</a>{{/each}}")
@@ -23125,7 +23518,7 @@ define("ember-routing-handlebars/tests/helpers/action_test",
     });
 
     test("a quoteless parameter that also exists as an action name functions properly", function(){
-      Ember.TESTING_DEPRECATION = true;
+      expectDeprecation('You specified a quoteless path to the {{action}} helper \'ohNoeNotValid\' which did not resolve to an actionName. Perhaps you meant to use a quoted actionName? (e.g. {{action \'ohNoeNotValid\'}}).');
       var triggeredAction;
 
       view = EmberView.create({
@@ -23152,7 +23545,9 @@ define("ember-routing-handlebars/tests/helpers/action_test",
       ok(triggeredAction, 'the action was triggered');
     });
 
-    test("a quoteless parameter that also exists as an action name results in an assertion", function(){
+    test("a quoteless parameter that also exists as an action name results in a deprecation", function(){
+      expectDeprecation('You specified a quoteless path to the {{action}} helper \'ohNoeNotValid\' which did not resolve to an actionName. Perhaps you meant to use a quoted actionName? (e.g. {{action \'ohNoeNotValid\'}}).');
+
       var triggeredAction;
 
       view = EmberView.create({
@@ -23172,54 +23567,11 @@ define("ember-routing-handlebars/tests/helpers/action_test",
         view.appendTo('#qunit-fixture');
       });
 
-      var oldAssert = Ember.assert;
-      Ember.assert = function(message, test){
-        ok(test, message + " -- was properly asserted");
-      };
-
       run(function(){
         view.$("#oops-bound-param").click();
       });
 
       ok(triggeredAction, 'the action was triggered');
-
-      Ember.assert = oldAssert;
-    });
-
-    test("a quoteless parameter that also exists as an action name in deprecated action in controller style results in an assertion", function(){
-      var dropDeprecatedActionStyleOrig = Ember.FEATURES['ember-routing-drop-deprecated-action-style'];
-      Ember.FEATURES['ember-routing-drop-deprecated-action-style'] = false;
-
-      var triggeredAction;
-
-      view = EmberView.create({
-        template: compile("<a id='oops-bound-param' {{action ohNoeNotValid}}>Hi</a>")
-      });
-
-      var controller = EmberController.extend({
-        ohNoeNotValid: function() {
-          triggeredAction = true;
-        }
-      }).create();
-
-      run(function() {
-        view.set('controller', controller);
-        view.appendTo('#qunit-fixture');
-      });
-
-      var oldAssert = Ember.assert;
-      Ember.assert = function(message, test){
-        ok(test, message + " -- was properly asserted");
-      };
-
-      run(function(){
-        view.$("#oops-bound-param").click();
-      });
-
-      ok(triggeredAction, 'the action was triggered');
-
-      Ember.assert = oldAssert;
-      Ember.FEATURES['ember-routing-drop-deprecated-action-style'] = dropDeprecatedActionStyleOrig;
     });
 
     QUnit.module("Ember.Handlebars - action helper - deprecated invoking directly on target", {
@@ -23241,32 +23593,6 @@ define("ember-routing-handlebars/tests/helpers/action_test",
         });
       }
     });
-
-    if (!Ember.FEATURES.isEnabled('ember-routing-drop-deprecated-action-style')) {
-      test("should invoke a handler defined directly on the target (DEPRECATED)", function() {
-        var eventHandlerWasCalled,
-            model = EmberObject.create();
-
-        var controller = EmberController.extend({
-          edit: function() {
-            eventHandlerWasCalled = true;
-          }
-        }).create();
-
-        view = EmberView.create({
-          controller: controller,
-          template: EmberHandlebars.compile('<button {{action "edit"}}>edit</button>')
-        });
-
-        appendView();
-
-        expectDeprecation(/Action handlers implemented directly on controllers are deprecated/);
-
-        view.$('button').trigger('click');
-
-        ok(eventHandlerWasCalled, "the action was called");
-      });
-    }
 
     test("should respect preventDefault=false option if provided", function(){
       view = EmberView.create({
@@ -23409,8 +23735,9 @@ define("ember-routing-handlebars/tests/helpers/outlet_test",
 
     function resolverFor(namespace) {
       return function(fullName) {
-        var nameParts = fullName.split(":"),
-            type = nameParts[0], name = nameParts[1];
+        var nameParts = fullName.split(":");
+        var type = nameParts[0];
+        var name = nameParts[1];
 
         if (type === 'template') {
           var templateName = decamelize(name);
@@ -23695,8 +24022,9 @@ define("ember-routing-handlebars/tests/helpers/outlet_test",
     });
 
     test("should support layouts", function() {
-      var template = "{{outlet}}",
-          layout = "<h1>HI</h1>{{yield}}";
+      var template = "{{outlet}}";
+      var layout = "<h1>HI</h1>{{yield}}";
+
       view = EmberView.create({
         template: EmberHandlebars.compile(template),
         layout: EmberHandlebars.compile(layout)
@@ -23725,8 +24053,8 @@ define("ember-routing-handlebars/tests/helpers/outlet_test.jshint",
     });
   });
 define("ember-routing-handlebars/tests/helpers/render_test",
-  ["ember-metal/core","ember-metal/property_get","ember-metal/property_set","ember-metal/run_loop","ember-metal/platform","ember-metal/mixin","container/container","ember-runtime/system/namespace","ember-runtime/system/string","ember-runtime/controllers/controller","ember-runtime/controllers/object_controller","ember-runtime/controllers/array_controller","ember-routing/system/router","ember-routing/location/hash_location","ember-handlebars","ember-routing/ext/view","ember-handlebars/views/metamorph_view","ember-views/system/jquery","ember-routing-handlebars/helpers/render","ember-routing-handlebars/helpers/action","ember-routing-handlebars/helpers/outlet"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__, __dependency16__, __dependency17__, __dependency18__, __dependency19__, __dependency20__, __dependency21__) {
+  ["ember-metal/core","ember-metal/property_get","ember-metal/property_set","ember-metal/run_loop","ember-metal/platform","ember-metal/mixin","container/container","ember-runtime/system/namespace","ember-runtime/system/string","ember-runtime/controllers/controller","ember-runtime/controllers/object_controller","ember-runtime/controllers/array_controller","ember-routing/system/router","ember-routing/location/hash_location","ember-handlebars","ember-routing/ext/view","ember-handlebars/views/metamorph_view","ember-views/system/jquery","ember-views/system/action_manager","ember-routing-handlebars/helpers/render","ember-routing-handlebars/helpers/action","ember-routing-handlebars/helpers/outlet"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__, __dependency15__, __dependency16__, __dependency17__, __dependency18__, __dependency19__, __dependency20__, __dependency21__, __dependency22__) {
     "use strict";
     var Ember = __dependency1__["default"];
     // TEMPLATES
@@ -23752,11 +24080,11 @@ define("ember-routing-handlebars/tests/helpers/render_test",
     var EmberView = __dependency16__["default"];
     var _MetamorphView = __dependency17__["default"];
     var jQuery = __dependency18__["default"];
+    var ActionManager = __dependency19__["default"];
 
-    var renderHelper = __dependency19__["default"];
-    var ActionHelper = __dependency20__.ActionHelper;
-    var actionHelper = __dependency20__.actionHelper;
-    var outletHelper = __dependency21__.outletHelper;
+    var renderHelper = __dependency20__["default"];
+    var actionHelper = __dependency21__.actionHelper;
+    var outletHelper = __dependency22__.outletHelper;
 
     function appendView(view) {
       run(function() { view.appendTo('#qunit-fixture'); });
@@ -23793,8 +24121,9 @@ define("ember-routing-handlebars/tests/helpers/render_test",
 
     function resolverFor(namespace) {
       return function(fullName) {
-        var nameParts = fullName.split(":"),
-            type = nameParts[0], name = nameParts[1];
+        var nameParts = fullName.split(":");
+        var type = nameParts[0];
+        var name = nameParts[1];
 
         if (type === 'template') {
           var templateName = decamelize(name);
@@ -24201,10 +24530,10 @@ define("ember-routing-handlebars/tests/helpers/render_test",
 
       appendView(view);
 
-      var button = jQuery("#parent-action"),
-          actionId = button.data('ember-action'),
-          action = ActionHelper.registeredActions[actionId],
-          handler = action.handler;
+      var button = jQuery("#parent-action");
+      var actionId = button.data('ember-action');
+      var action = ActionManager.registeredActions[actionId];
+      var handler = action.handler;
 
       equal(button.text(), "Go to Mom", "The parentController property is set on the child controller");
 
@@ -24455,9 +24784,9 @@ define("ember-routing/tests/location/auto_location_test",
     var AutoLocation = __dependency6__["default"];
     var EmberLocation = __dependency7__["default"];
 
-    var AutoTestLocation, location, supportsHistory, supportsHashChange,
-        getSupportsHistory = AutoLocation._getSupportsHistory,
-        getSupportsHashChange = AutoLocation._getSupportsHashChange;
+    var AutoTestLocation, location, supportsHistory, supportsHashChange;
+    var getSupportsHistory = AutoLocation._getSupportsHistory;
+    var getSupportsHashChange = AutoLocation._getSupportsHashChange;
 
     var FakeHistoryLocation = EmberObject.extend({
       implementation: 'history'
@@ -24657,7 +24986,7 @@ define("ember-routing/tests/location/auto_location_test",
       equal(get(location, 'cancelRouterSetup'), true, 'cancelRouterSetup should be set so the router knows.');
     });
 
-    if (Ember.FEATURES.isEnabled('ember-routing-auto-location-uses-replace-state-for-history')) {
+    
       test("AutoLocation.create() should replace the URL for pushState-supported browsers viewing a HashLocation-formatted url", function() {
         expect(2);
 
@@ -24682,35 +25011,7 @@ define("ember-routing/tests/location/auto_location_test",
 
         equal(get(location, 'implementation'), 'history');
       });
-    } else {
-      test("AutoLocation.create() should transform the URL for pushState-supported browsers viewing a HashLocation-formatted url", function() {
-        expect(4);
-
-        supportsHistory = true;
-        supportsHashChange = true;
-
-        AutoTestLocation._location = {
-          hash: '#/test',
-          hostname: 'test.com',
-          href: 'http://test.com/#/test',
-          pathname: '/',
-          protocol: 'http:',
-          port: '',
-          search: '',
-
-          replace: function (path) {
-            equal(path, 'http://test.com/test', 'location.replace should be called with normalized HistoryLocation url');
-          }
-        };
-
-        createLocation();
-
-        equal(get(location, 'implementation'), 'none', 'NoneLocation should be returned while we attempt to location.replace()');
-        equal(location instanceof FakeNoneLocation, true, 'NoneLocation should be returned while we attempt to location.replace()');
-        equal(get(location, 'cancelRouterSetup'), true, 'cancelRouterSetup should be set so the router knows.');
-      });
-    }
-
+    
     test("AutoLocation._getSupportsHistory() should handle false positive for Android 2.2/2.3, returning false", function() {
       expect(1);
 
@@ -24884,8 +25185,8 @@ define("ember-routing/tests/location/history_location_test",
     var run = __dependency3__["default"];
     var HistoryLocation = __dependency4__["default"];
 
-    var FakeHistory, HistoryTestLocation, location,
-        rootURL = window.location.pathname;
+    var FakeHistory, HistoryTestLocation, location;
+    var rootURL = window.location.pathname;
 
     function createLocation(options){
       if (!options) { options = {}; }
@@ -25081,8 +25382,9 @@ define("ember-routing/tests/system/controller_for_test",
 
     function resolverFor(namespace) {
       return function(fullName) {
-        var nameParts = fullName.split(":"),
-            type = nameParts[0], name = nameParts[1];
+        var nameParts = fullName.split(":");
+        var type = nameParts[0];
+        var name = nameParts[1];
 
         if (name === 'basic') {
           name = '';
@@ -25777,13 +26079,13 @@ define("ember-runtime/ext/string.jshint",
       ok(true, 'ember-runtime/ext/string.js should pass jshint.'); 
     });
   });
-define("ember-runtime/keys.jshint",
+define("ember-runtime/mixins/-proxy.jshint",
   [],
   function() {
     "use strict";
-    module('JSHint - ember-runtime');
-    test('ember-runtime/keys.js should pass jshint', function() { 
-      ok(true, 'ember-runtime/keys.js should pass jshint.'); 
+    module('JSHint - ember-runtime/mixins');
+    test('ember-runtime/mixins/-proxy.js should pass jshint', function() { 
+      ok(true, 'ember-runtime/mixins/-proxy.js should pass jshint.'); 
     });
   });
 define("ember-runtime/mixins/action_handler.jshint",
@@ -25910,15 +26212,6 @@ define("ember-runtime/mixins/promise_proxy.jshint",
     module('JSHint - ember-runtime/mixins');
     test('ember-runtime/mixins/promise_proxy.js should pass jshint', function() { 
       ok(true, 'ember-runtime/mixins/promise_proxy.js should pass jshint.'); 
-    });
-  });
-define("ember-runtime/mixins/proxy.jshint",
-  [],
-  function() {
-    "use strict";
-    module('JSHint - ember-runtime/mixins');
-    test('ember-runtime/mixins/proxy.js should pass jshint', function() { 
-      ok(true, 'ember-runtime/mixins/proxy.js should pass jshint.'); 
     });
   });
 define("ember-runtime/mixins/sortable.jshint",
@@ -26131,6 +26424,27 @@ define("ember-runtime/tests/computed/computed_macros_test",
       equal(get(obj, 'bestLannisterUnspecified'), false, "empty respects strings");
       equal(get(obj, 'noLannistersKnown'), false, "empty respects array mutations");
     });
+
+    testBoth('Ember.computed.notEmpty', function(get, set) {
+      var obj = EmberObject.extend({
+        bestLannister: null,
+        lannisters: null,
+
+        bestLannisterSpecified: computed.notEmpty('bestLannister'),
+        LannistersKnown: computed.notEmpty('lannisters')
+      }).create({
+        lannisters: Ember.A([])
+      });
+
+      equal(get(obj, 'bestLannisterSpecified'), false, "bestLannister initially empty");
+      equal(get(obj, 'LannistersKnown'), false, "lannisters initially empty");
+
+      get(obj, 'lannisters').pushObject('Tyrion');
+      set(obj, 'bestLannister', 'Tyrion');
+
+      equal(get(obj, 'bestLannisterSpecified'), true, "empty respects strings");
+      equal(get(obj, 'LannistersKnown'), true, "empty respects array mutations");
+    });
   });
 define("ember-runtime/tests/computed/computed_macros_test.jshint",
   [],
@@ -26225,8 +26539,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("it caches properly", function() {
-      var array = get(obj, 'array'),
-          mapped = get(obj, 'mapped');
+      var array = get(obj, 'array');
+      var mapped = get(obj, 'mapped');
 
       equal(userFnCalls, 4, "precond - mapper called expected number of times");
 
@@ -26263,6 +26577,20 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
       deepEqual(get(obj, 'mapped'), ['A', 'B'], "properties unshifted in sequence are mapped correctly");
     });
 
+    test("it passes the index to the callback", function() {
+      var array = Ember.A(['a', 'b', 'c']);
+
+      run(function() {
+        obj = EmberObject.createWithMixins({
+          array: array,
+          mapped: computedMap('array', function (item, index) { return index; })
+        });
+        get(obj, 'mapped');
+      });
+
+      deepEqual(get(obj, 'mapped'), [0, 1, 2], "index is passed to callback correctly");
+    });
+
     test("it maps objects", function() {
       deepEqual(get(obj, 'mappedObjects'), [{ name: 'Robert'}, { name: 'Leanna' }]);
 
@@ -26286,8 +26614,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("it maps unshifted objects with property observers", function() {
-      var array = Ember.A([]),
-          cObj = { v: 'c' };
+      var array = Ember.A([]);
+      var cObj = { v: 'c' };
 
       run(function() {
         obj = EmberObject.createWithMixins({
@@ -26346,8 +26674,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("it is observerable", function() {
-      var mapped = get(obj, 'mapped'),
-          calls = 0;
+      var mapped = get(obj, 'mapped');
+      var calls = 0;
 
       deepEqual(get(obj, 'mapped'), [1, 3, 2, 1]);
 
@@ -26389,9 +26717,23 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
       deepEqual(filtered, [2,4,6,8], "computedFilter filters by the specified function");
     });
 
+    test("it passes the index to the callback", function() {
+      var array = Ember.A(['a', 'b', 'c']);
+
+      run(function() {
+        obj = EmberObject.createWithMixins({
+          array: array,
+          filtered: computedFilter('array', function (item, index) { return index === 1; })
+        });
+        get(obj, 'filtered');
+      });
+
+      deepEqual(get(obj, 'filtered'), ['b'], "index is passed to callback correctly");
+    });
+
     test("it caches properly", function() {
-      var array = get(obj, 'array'),
-          filtered = get(obj, 'filtered');
+      var array = get(obj, 'array');
+      var filtered = get(obj, 'filtered');
 
       equal(userFnCalls, 8, "precond - filter called expected number of times");
 
@@ -26407,8 +26749,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("it updates as the array is modified", function() {
-      var array = get(obj, 'array'),
-          filtered = get(obj, 'filtered');
+      var array = get(obj, 'array');
+      var filtered = get(obj, 'filtered');
 
       deepEqual(filtered, [2,4,6,8], "precond - filtered array is initially correct");
 
@@ -26430,8 +26772,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("the dependent array can be cleared one at a time", function() {
-      var array = get(obj, 'array'),
-          filtered = get(obj, 'filtered');
+      var array = get(obj, 'array');
+      var filtered = get(obj, 'filtered');
 
       deepEqual(filtered, [2,4,6,8], "precond - filtered array is initially correct");
 
@@ -26451,8 +26793,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("the dependent array can be `clear`ed directly (#3272)", function() {
-      var array = get(obj, 'array'),
-          filtered = get(obj, 'filtered');
+      var array = get(obj, 'array');
+      var filtered = get(obj, 'filtered');
 
       deepEqual(filtered, [2,4,6,8], "precond - filtered array is initially correct");
 
@@ -26464,8 +26806,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("it updates as the array is replaced", function() {
-      var array = get(obj, 'array'),
-          filtered = get(obj, 'filtered');
+      var array = get(obj, 'array');
+      var filtered = get(obj, 'filtered');
 
       deepEqual(filtered, [2,4,6,8], "precond - filtered array is initially correct");
 
@@ -26497,9 +26839,9 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("properties can be filtered by truthiness", function() {
-      var array = get(obj, 'array'),
-          as = get(obj, 'as'),
-          bs = get(obj, 'bs');
+      var array = get(obj, 'array');
+      var as = get(obj, 'as');
+      var bs = get(obj, 'bs');
 
       deepEqual(as.mapBy('name'), ['one', 'two', 'three'], "properties can be filtered by existence");
       deepEqual(bs.mapBy('name'), ['three', 'four'], "booleans can be filtered");
@@ -26534,8 +26876,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("properties can be filtered by values", function() {
-      var array = get(obj, 'array'),
-          a1s = get(obj, 'a1s');
+      var array = get(obj, 'array');
+      var a1s = get(obj, 'a1s');
 
       deepEqual(a1s.mapBy('name'), ['one', 'three'], "properties can be filtered by matching value");
 
@@ -26575,8 +26917,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     forEach.call([['uniq', computedUniq], ['union', computedUnion]], function (tuple) {
-      var alias  = tuple[0],
-          testedFunc = tuple[1];
+      var alias  = tuple[0];
+      var testedFunc = tuple[1];
 
       QUnit.module('computed.' + alias, {
         setup: function() {
@@ -26598,10 +26940,10 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
       });
 
       test("does not include duplicates", function() {
-        var array = get(obj, 'array'),
-            array2 = get(obj, 'array2'),
-            array3 = get(obj, 'array3'),
-            union = get(obj, 'union');
+        var array = get(obj, 'array');
+        var array2 = get(obj, 'array2');
+        var array3 = get(obj, 'array3');
+        var union = get(obj, 'union');
 
         deepEqual(union, [1,2,3,4,5,6,7,8,9,10], alias + " does not include duplicates");
 
@@ -26631,10 +26973,10 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
       });
 
       test("has set-union semantics", function() {
-        var array = get(obj, 'array'),
-            array2 = get(obj, 'array2'),
-            array3 = get(obj, 'array3'),
-            union = get(obj, 'union');
+        var array = get(obj, 'array');
+        var array2 = get(obj, 'array2');
+        var array3 = get(obj, 'array3');
+        var union = get(obj, 'union');
 
         deepEqual(union, [1,2,3,4,5,6,7,8,9,10], alias + " is initially correct");
 
@@ -26687,10 +27029,10 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     test("it has set-intersection semantics", function() {
-      var array = get(obj, 'array'),
-          array2 = get(obj, 'array2'),
-          array3 = get(obj, 'array3'),
-          intersection = get(obj, 'intersection');
+      var array = get(obj, 'array');
+      var array2 = get(obj, 'array2');
+      var array3 = get(obj, 'array3');
+      var intersection = get(obj, 'intersection');
 
       deepEqual(intersection, [3,5], "intersection is initially correct");
 
@@ -26759,9 +27101,9 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
 
 
     test("it has set-diff semantics", function() {
-      var array1 = get(obj, 'array'),
-          array2 = get(obj, 'array2'),
-          diff = get(obj, 'diff');
+      var array1 = get(obj, 'array');
+      var array2 = get(obj, 'array2');
+      var diff = get(obj, 'diff');
 
       deepEqual(diff, [1, 2, 6, 7], "set-diff is initially correct");
 
@@ -26892,8 +27234,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
       });
 
       test("guid sort-order fallback with a serach proxy is not confused by non-search ObjectProxys", function() {
-        var tyrion = { fname: "Tyrion", lname: "Lannister" },
-            tyrionInDisguise = ObjectProxy.create({
+        var tyrion = { fname: "Tyrion", lname: "Lannister" };
+        var tyrionInDisguise = ObjectProxy.create({
               fname: "Yollo",
               lname: "",
               content: tyrion
@@ -27136,8 +27478,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     });
 
     function sortByLnameFname(a, b) {
-      var lna = get(a, 'lname'),
-          lnb = get(b, 'lname');
+      var lna = get(a, 'lname');
+      var lnb = get(b, 'lname');
 
       if (lna !== lnb) {
         return lna > lnb ? 1 : -1;
@@ -27147,8 +27489,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     }
 
     function sortByFnameAsc(a, b) {
-      var fna = get(a, 'fname'),
-          fnb = get(b, 'fname');
+      var fna = get(a, 'fname');
+      var fnb = get(b, 'fname');
 
       if (fna === fnb) {
         return 0;
@@ -27408,8 +27750,8 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test",
     }
 
     function priorityComparator(todoA, todoB) {
-      var pa = parseInt(get(todoA, 'priority'), 10),
-          pb = parseInt(get(todoB, 'priority'), 10);
+      var pa = parseInt(get(todoA, 'priority'), 10);
+      var pb = parseInt(get(todoB, 'priority'), 10);
 
       return pa - pb;
     }
@@ -27551,7 +27893,7 @@ define("ember-runtime/tests/computed/reduce_computed_macros_test.jshint",
     });
   });
 define("ember-runtime/tests/computed/reduce_computed_test",
-  ["ember-metal/core","ember-metal/enumerable_utils","ember-metal/property_get","ember-metal/property_set","ember-metal/utils","ember-metal/run_loop","ember-metal/mixin","ember-runtime/keys","ember-runtime/system/object","ember-metal/computed","ember-runtime/computed/array_computed","ember-runtime/computed/reduce_computed","ember-runtime/system/array_proxy","ember-runtime/system/subarray"],
+  ["ember-metal/core","ember-metal/enumerable_utils","ember-metal/property_get","ember-metal/property_set","ember-metal/utils","ember-metal/run_loop","ember-metal/mixin","ember-metal/keys","ember-runtime/system/object","ember-metal/computed","ember-runtime/computed/array_computed","ember-runtime/computed/reduce_computed","ember-runtime/system/array_proxy","ember-runtime/system/subarray"],
   function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __dependency7__, __dependency8__, __dependency9__, __dependency10__, __dependency11__, __dependency12__, __dependency13__, __dependency14__) {
     "use strict";
     var Ember = __dependency1__["default"];
@@ -27676,9 +28018,9 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("after the first retrieval, array computed properties observe additions to dependent arrays", function() {
-      var numbers = get(obj, 'numbers'),
+      var numbers = get(obj, 'numbers');
           // set up observers
-          evenNumbers = get(obj, 'evenNumbers');
+      var evenNumbers = get(obj, 'evenNumbers');
 
       run(function() {
         numbers.pushObjects([7, 8]);
@@ -27688,9 +28030,9 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("after the first retrieval, array computed properties observe removals from dependent arrays", function() {
-      var numbers = get(obj, 'numbers'),
+      var numbers = get(obj, 'numbers');
           // set up observers
-          evenNumbers = get(obj, 'evenNumbers');
+      var evenNumbers = get(obj, 'evenNumbers');
 
       run(function() {
         numbers.removeObjects([3, 4]);
@@ -27700,8 +28042,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("after first retrieval, array computed properties can observe properties on array items", function() {
-      var nestedNumbers = get(obj, 'nestedNumbers'),
-          evenNestedNumbers = get(obj, 'evenNestedNumbers');
+      var nestedNumbers = get(obj, 'nestedNumbers');
+      var evenNestedNumbers = get(obj, 'evenNestedNumbers');
 
       deepEqual(evenNestedNumbers, [2, 4, 6], 'precond -- starts off with correct values');
 
@@ -27714,8 +28056,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("changes to array computed properties happen synchronously", function() {
-      var nestedNumbers = get(obj, 'nestedNumbers'),
-          evenNestedNumbers = get(obj, 'evenNestedNumbers');
+      var nestedNumbers = get(obj, 'nestedNumbers');
+      var evenNestedNumbers = get(obj, 'evenNestedNumbers');
 
       deepEqual(evenNestedNumbers, [2, 4, 6], 'precond -- starts off with correct values');
 
@@ -27757,11 +28099,11 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
       test("multiple item property keys can be specified via brace expansion", function() {
-        var addedCalls = 0,
-            removedCalls = 0,
-            expected = Ember.A(),
-            item = { propA: 'A', propB: 'B', propC: 'C' },
-            obj = EmberObject.createWithMixins({
+        var addedCalls = 0;
+        var removedCalls = 0;
+        var expected = Ember.A();
+        var item = { propA: 'A', propB: 'B', propC: 'C' };
+        var obj = EmberObject.createWithMixins({
               bar: Ember.A([item]),
               foo: reduceComputed({
                 initialValue: Ember.A(),
@@ -27830,8 +28172,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("after the first retrieval, array computed properties observe dependent arrays", function() {
-      var numbers = get(obj, 'numbers'),
-          evenNumbers = get(obj, 'evenNumbers');
+      var numbers = get(obj, 'numbers');
+      var evenNumbers = get(obj, 'evenNumbers');
 
       deepEqual(evenNumbers, [2, 4, 6], 'precond -- starts off with correct values');
 
@@ -27843,8 +28185,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("array observers are torn down when dependent arrays change", function() {
-      var numbers = get(obj, 'numbers'),
-          evenNumbers = get(obj, 'evenNumbers');
+      var numbers = get(obj, 'numbers');
+      var evenNumbers = get(obj, 'evenNumbers');
 
       equal(addCalls, 6, 'precond - add has been called for each item in the array');
       equal(removeCalls, 0, 'precond - removed has not been called');
@@ -27863,8 +28205,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("modifying properties on dependent array items triggers observers exactly once", function() {
-      var numbers = get(obj, 'numbers'),
-          evenNumbers = get(obj, 'evenNumbers');
+      var numbers = get(obj, 'numbers');
+      var evenNumbers = get(obj, 'evenNumbers');
 
       equal(addCalls, 6, 'precond - add has not been called for each item in the array');
       equal(removeCalls, 0, 'precond - removed has not been called');
@@ -27879,8 +28221,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("multiple array computed properties on the same object can observe dependent arrays", function() {
-      var numbers = get(obj, 'numbers'),
-          otherNumbers = get(obj, 'otherNumbers');
+      var numbers = get(obj, 'numbers');
+      var otherNumbers = get(obj, 'otherNumbers');
 
       deepEqual(get(obj, 'evenNumbers'), [2,4,6], "precond - evenNumbers is initially correct");
       deepEqual(get(obj, 'evenNumbersMultiDep'), [2, 4, 6, 8], "precond - evenNumbersMultiDep is initially correct");
@@ -27942,8 +28284,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("dependent arrays can use `replace` with an out of bounds index to add items", function() {
-      var dependentArray = Ember.A(),
-          array;
+      var dependentArray = Ember.A();
+      var array;
 
       obj = EmberObject.extend({
         dependentArray: dependentArray,
@@ -27970,8 +28312,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("dependent arrays can use `replace` with a negative index to remove items indexed from the right", function() {
-      var dependentArray = Ember.A([1,2,3,4,5]),
-          array;
+      var dependentArray = Ember.A([1,2,3,4,5]);
+      var array;
 
       obj = EmberObject.extend({
         dependentArray: dependentArray,
@@ -27991,8 +28333,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("dependent arrays that call `replace` with an out of bounds index to remove items is a no-op", function() {
-      var dependentArray = Ember.A([1, 2]),
-          array;
+      var dependentArray = Ember.A([1, 2]);
+      var array;
 
       obj = EmberObject.extend({
         dependentArray: dependentArray,
@@ -28012,8 +28354,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("dependent arrays that call `replace` with a too-large removedCount a) works and b) still right-truncates", function() {
-      var dependentArray = Ember.A([1, 2]),
-          array;
+      var dependentArray = Ember.A([1, 2]);
+      var array;
 
       obj = EmberObject.extend({
         dependentArray: dependentArray,
@@ -28044,8 +28386,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
         return array;
       }
 
-      var dependentArray = Ember.A(),
-          options = {
+      var dependentArray = Ember.A();
+      var options = {
             addedItem: addedItem,
             removedItem: removedItem
           };
@@ -28091,9 +28433,9 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("recomputations from `arrayComputed` observers add back dependent keys", function() {
-      var meta = metaFor(obj),
-          people = get(obj, 'people'),
-          titles;
+      var meta = metaFor(obj);
+      var people = get(obj, 'people');
+      var titles;
 
       equal(meta.deps, undefined, "precond - nobody depends on people'");
       equal(meta.watching.people, undefined, "precond - nobody is watching people");
@@ -28123,8 +28465,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
 
     QUnit.module('Ember.arryComputed - self chains', {
       setup: function() {
-        var a = EmberObject.create({ name: 'a' }),
-        b = EmberObject.create({ name: 'b' });
+        var a = EmberObject.create({ name: 'a' });
+        var b = EmberObject.create({ name: 'b' });
 
         obj = ArrayProxy.createWithMixins({
           content: Ember.A([a, b]),
@@ -28424,8 +28766,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("array dependencies specified with `.[]` completely invalidate a reduceComputed CP", function() {
-      var dependentArray = Ember.A(),
-      totallyInvalidatingDependentArray = Ember.A();
+      var dependentArray = Ember.A();
+      var totallyInvalidatingDependentArray = Ember.A();
 
       obj = EmberObject.extend({
         totallyInvalidatingDependentArray: totallyInvalidatingDependentArray,
@@ -28465,8 +28807,8 @@ define("ember-runtime/tests/computed/reduce_computed_test",
     });
 
     test("returning undefined in addedItem/removedItem completely invalidates a reduceComputed CP", function() {
-      var dependentArray = Ember.A([3,2,1]),
-          counter = 0;
+      var dependentArray = Ember.A([3,2,1]);
+      var counter = 0;
 
       obj = EmberObject.extend({
         dependentArray: dependentArray,
@@ -28585,12 +28927,14 @@ define("ember-runtime/tests/computed/reduce_computed_test.jshint",
     });
   });
 define("ember-runtime/tests/controllers/array_controller_test",
-  ["ember-metal/core","ember-runtime/tests/suites/mutable_array","ember-runtime/controllers/array_controller"],
-  function(__dependency1__, __dependency2__, __dependency3__) {
+  ["ember-metal/core","ember-metal/computed","ember-runtime/tests/suites/mutable_array","ember-runtime/controllers/array_controller","ember-runtime/controllers/object_controller"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__) {
     "use strict";
     var Ember = __dependency1__["default"];
-    var MutableArrayTests = __dependency2__["default"];
-    var ArrayController = __dependency3__["default"];
+    var computed = __dependency2__.computed;
+    var MutableArrayTests = __dependency3__["default"];
+    var ArrayController = __dependency4__["default"];
+    var ObjectController = __dependency5__["default"];
 
     QUnit.module("ember-runtime/controllers/array_controller_test");
 
@@ -28626,6 +28970,24 @@ define("ember-runtime/tests/controllers/array_controller_test",
       controller.pushObject('item');
       equal(controller.get('length'), 1);
     });
+
+    if (Ember.FEATURES.isEnabled("ember-runtime-item-controller-inline-class")) {
+      test("Ember.ArrayController can accept a controller class directly as the value for itemController", function() {
+        var controller = ArrayController.create({
+          itemController: ObjectController.extend({
+            expand: computed(function() {
+              return this.get('text') + ' is working!';
+            }).property('text')
+          })
+        });
+
+        controller.pushObjects([{
+          text: 'itemController'
+        }]);
+
+        strictEqual(controller.get('firstObject.expand'), 'itemController is working!');
+      });
+    }
   });
 define("ember-runtime/tests/controllers/array_controller_test.jshint",
   [],
@@ -28766,19 +29128,6 @@ define("ember-runtime/tests/controllers/controller_test",
     });
 
     QUnit.module('Controller deprecations');
-
-    if (!Ember.FEATURES.isEnabled('ember-routing-drop-deprecated-action-style')) {
-      test("Action can be handled by method directly on controller (DEPRECATED)", function() {
-        expectDeprecation(/Action handlers implemented directly on controllers are deprecated/);
-        var TestController = Controller.extend({
-          poke: function() {
-            ok(true, 'poked');
-          }
-        });
-        var controller = TestController.create({});
-        controller.send("poke");
-      });
-    }
 
     QUnit.module('Controller Content -> Model Alias');
 
@@ -28991,9 +29340,9 @@ define("ember-runtime/tests/controllers/item_controller_class_test",
       arrayController.objectAtContent(2);
 
       // Not a public API; just checking for cleanup
-      var subControllers = get(arrayController, '_subControllers'),
-          jaimeController = subControllers[1],
-          cerseiController = subControllers[2];
+      var subControllers = get(arrayController, '_subControllers');
+      var jaimeController = subControllers[1];
+      var cerseiController = subControllers[2];
 
       equal(!!jaimeController.isDestroying, false, "precond - nobody is destroyed yet");
       equal(!!cerseiController.isDestroying, false, "precond - nobody is destroyed yet");
@@ -29019,9 +29368,9 @@ define("ember-runtime/tests/controllers/item_controller_class_test",
 
     test("when items are removed from the arrayController, their respective subcontainers are destroyed", function() {
       createArrayController();
-      var jaimeController = arrayController.objectAtContent(1),
-          cerseiController = arrayController.objectAtContent(2),
-          subControllers = get(arrayController, '_subControllers');
+      var jaimeController = arrayController.objectAtContent(1);
+      var cerseiController = arrayController.objectAtContent(2);
+      var subControllers = get(arrayController, '_subControllers');
 
       equal(!!jaimeController.isDestroyed, false, "precond - nobody is destroyed yet");
       equal(!!cerseiController.isDestroyed, false, "precond - nobody is destroyed yet");
@@ -29036,8 +29385,8 @@ define("ember-runtime/tests/controllers/item_controller_class_test",
 
     test("one cannot remove wrapped model directly when specifying `itemController`", function() {
       createArrayController();
-      var jaimeController = arrayController.objectAtContent(1),
-          cerseiController = arrayController.objectAtContent(2);
+      var jaimeController = arrayController.objectAtContent(1);
+      var cerseiController = arrayController.objectAtContent(2);
 
       equal(arrayController.get('length'), 3, "precondition - array is in initial state");
       arrayController.removeObject(cersei);
@@ -29052,9 +29401,9 @@ define("ember-runtime/tests/controllers/item_controller_class_test",
 
     test("when items are removed from the underlying array, their respective subcontainers are destroyed", function() {
       createArrayController();
-      var jaimeController = arrayController.objectAtContent(1),
-          cerseiController = arrayController.objectAtContent(2),
-          subContainers = get(arrayController, 'subContainers');
+      var jaimeController = arrayController.objectAtContent(1);
+      var cerseiController = arrayController.objectAtContent(2);
+      var subContainers = get(arrayController, 'subContainers');
 
       equal(!!jaimeController.isDestroying, false, "precond - nobody is destroyed yet");
       equal(!!cerseiController.isDestroying, false, "precond - nobody is destroyed yet");
@@ -29070,8 +29419,8 @@ define("ember-runtime/tests/controllers/item_controller_class_test",
     test("`itemController` can be dynamic by overwriting `lookupItemController`", function() {
       createDynamicArrayController();
 
-      var tywinController = arrayController.objectAtContent(0),
-          jaimeController = arrayController.objectAtContent(1);
+      var tywinController = arrayController.objectAtContent(0);
+      var jaimeController = arrayController.objectAtContent(1);
 
       ok(controllerClass.detectInstance(tywinController), "lookupItemController can return different classes for different objects");
       ok(otherControllerClass.detectInstance(jaimeController), "lookupItemController can return different classes for different objects");
@@ -29138,8 +29487,8 @@ define("ember-runtime/tests/controllers/item_controller_class_test",
     test("array observers can invoke `objectAt` without overwriting existing item controllers", function() {
       createArrayController();
 
-      var tywinController = arrayController.objectAtContent(0),
-          arrayObserverCalled = false;
+      var tywinController = arrayController.objectAtContent(0);
+      var arrayObserverCalled = false;
 
       arrayController.reopen({
         lannistersWillChange: Ember.K,
@@ -29164,8 +29513,8 @@ define("ember-runtime/tests/controllers/item_controller_class_test",
     test("`itemController`'s life cycle should be entangled with its parent controller", function() {
       createDynamicArrayController();
 
-      var tywinController = arrayController.objectAtContent(0),
-          jaimeController = arrayController.objectAtContent(1);
+      var tywinController = arrayController.objectAtContent(0);
+      var jaimeController = arrayController.objectAtContent(1);
 
       run(arrayController, 'destroy');
 
@@ -29331,13 +29680,23 @@ define("ember-runtime/tests/core/copy_test",
 
     test("Ember.copy null", function() {
       var obj = {field: null};
+
       equal(copy(obj, true).field, null, "null should still be null");
     });
 
     test("Ember.copy date", function() {
-      var date = new Date(2014, 7, 22),
-          dateCopy = copy(date);
+      var date = new Date(2014, 7, 22);
+      var dateCopy = copy(date);
+
       equal(date.getTime(), dateCopy.getTime(), "dates should be equivalent");
+    });
+
+    test("Ember.copy null prototype object", function() {
+      var obj = Object.create(null);
+
+      obj.foo = 'bar';
+
+      equal(copy(obj).foo, 'bar', 'bar should still be bar');
     });
   });
 define("ember-runtime/tests/core/copy_test.jshint",
@@ -29451,119 +29810,6 @@ define("ember-runtime/tests/core/is_empty_test.jshint",
       ok(true, 'ember-runtime/tests/core/is_empty_test.js should pass jshint.'); 
     });
   });
-define("ember-runtime/tests/core/keys_test",
-  ["ember-metal/property_set","ember-runtime/keys","ember-metal/observer","ember-runtime/system/object"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__) {
-    "use strict";
-    var set = __dependency1__.set;
-    var keys = __dependency2__["default"];
-    var addObserver = __dependency3__.addObserver;
-    var removeObserver = __dependency3__.removeObserver;
-    var EmberObject = __dependency4__["default"];
-
-    QUnit.module("Fetch Keys ");
-
-    test("should get a key array for a specified Ember.Object", function() {
-      var object1 = EmberObject.create({
-        names: "Rahul",
-        age: "23",
-        place: "Mangalore"
-      });
-
-      var object2 = keys(object1);
-
-      deepEqual(object2, ['names','age','place']);
-    });
-
-    test('should not contain properties declared in the prototype', function () {
-      var beer = EmberObject.extend({
-        type: 'ipa'
-      }).create();
-
-      deepEqual(keys(beer), []);
-    });
-
-    test('should return properties that were set after object creation', function () {
-      var beer = EmberObject.extend({
-        type: 'ipa'
-      }).create();
-
-      set(beer, 'brand', 'big daddy');
-
-      deepEqual(keys(beer), ['brand']);
-    });
-
-    QUnit.module('Keys behavior with observers');
-
-    test('should not leak properties on the prototype', function () {
-      var beer = EmberObject.extend({
-        type: 'ipa'
-      }).create();
-
-      addObserver(beer, 'type', Ember.K);
-      deepEqual(keys(beer), []);
-      removeObserver(beer, 'type', Ember.K);
-    });
-
-    test('observing a non existent property', function () {
-      var beer = EmberObject.extend({
-        type: 'ipa'
-      }).create();
-
-      addObserver(beer, 'brand', Ember.K);
-
-      deepEqual(keys(beer), []);
-
-      set(beer, 'brand', 'Corona');
-      deepEqual(keys(beer), ['brand']);
-
-      removeObserver(beer, 'brand', Ember.K);
-    });
-
-    test('with observers switched on and off', function () {
-      var beer = EmberObject.extend({
-        type: 'ipa'
-      }).create();
-
-      addObserver(beer, 'type', Ember.K);
-      removeObserver(beer, 'type', Ember.K);
-
-      deepEqual(keys(beer), []);
-    });
-
-    test('observers switched on and off with setter in between', function () {
-      var beer = EmberObject.extend({
-        type: 'ipa'
-      }).create();
-
-      addObserver(beer, 'type', Ember.K);
-      set(beer, 'type', 'ale');
-      removeObserver(beer, 'type', Ember.K);
-
-      deepEqual(keys(beer), ['type']);
-    });
-
-    test('observer switched on and off and then setter', function () {
-      var beer = EmberObject.extend({
-        type: 'ipa'
-      }).create();
-
-      addObserver(beer, 'type', Ember.K);
-      removeObserver(beer, 'type', Ember.K);
-      set(beer, 'type', 'ale');
-
-      deepEqual(keys(beer), ['type']);
-    });
-  });
-define("ember-runtime/tests/core/keys_test.jshint",
-  [],
-  function() {
-    "use strict";
-    module('JSHint - ember-runtime/tests/core');
-    test('ember-runtime/tests/core/keys_test.js should pass jshint', function() { 
-      ok(true, 'ember-runtime/tests/core/keys_test.js should pass jshint.'); 
-    });
-  });
 define("ember-runtime/tests/core/type_test",
   ["ember-metal/utils","ember-runtime/system/object"],
   function(__dependency1__, __dependency2__) {
@@ -29574,10 +29820,10 @@ define("ember-runtime/tests/core/type_test",
     QUnit.module("Ember Type Checking");
 
     test("Ember.typeOf", function() {
-      var a = null,
-          arr = [1,2,3],
-          obj = {},
-          object = EmberObject.create({ method: function() {} });
+      var a = null;
+      var arr = [1,2,3];
+      var obj = {};
+      var object = EmberObject.create({ method: function() {} });
 
       equal(typeOf(undefined),     'undefined', "item of type undefined");
       equal(typeOf(a),             'null',      "item of type null");
@@ -30024,10 +30270,10 @@ define("ember-runtime/tests/legacy_1x/mixins/observable/observable_test",
     // Ember.Observable Tests
     // ========================================================================
 
-    var object, ObjectC, ObjectD, objectA, objectB;
+    var object, ObjectC, ObjectD, objectA, objectB, lookup;
 
     var ObservableObject = EmberObject.extend(Observable);
-    var originalLookup = Ember.lookup, lookup;
+    var originalLookup = Ember.lookup;
 
     // ..........................................................
     // GET()
@@ -30415,8 +30661,8 @@ define("ember-runtime/tests/legacy_1x/mixins/observable/observable_test",
 
       // verify each call count.  cached should only be called once
       forEach(keys, function(key) {
-        var calls = object[key + 'Calls'], idx;
-        var expectedLength;
+        var calls = object[key + 'Calls'];
+        var idx, expectedLength;
 
         // Cached properties first check their cached value before setting the
         // property. Other properties blindly call set.
@@ -30978,10 +31224,10 @@ define("ember-runtime/tests/legacy_1x/mixins/observable/observersForKey_test",
     QUnit.module("object.observesForKey()");
 
     test("should get observers", function() {
-      var o1 = ObservableObject.create({ foo: 100 }),
-          o2 = ObservableObject.create({ func: function() {} }),
-          o3 = ObservableObject.create({ func: function() {} }),
-          observers = null;
+      var o1 = ObservableObject.create({ foo: 100 });
+      var o2 = ObservableObject.create({ func: function() {} });
+      var o3 = ObservableObject.create({ func: function() {} });
+      var observers = null;
 
       equal(get(o1.observersForKey('foo'), 'length'), 0, "o1.observersForKey should return empty array");
 
@@ -31037,7 +31283,8 @@ define("ember-runtime/tests/legacy_1x/mixins/observable/propertyChanges_test",
 
     var ObservableObject = EmberObject.extend(Observable);
 
-    var revMatches = false , ObjectA;
+    var revMatches = false;
+    var ObjectA;
 
     QUnit.module("object.propertyChanges", {
       setup: function() {
@@ -31897,8 +32144,9 @@ define("ember-runtime/tests/legacy_1x/system/object/concatenated_test",
           values: ['d', 'e', 'f']
         });
 
-        var values = get(obj, 'values'),
-            expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+        var values = get(obj, 'values');
+        var expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+
         deepEqual(values, expected, EmberStringUtils.fmt("should concatenate values property (expected: %@, got: %@)", [expected, values]));
       });
 
@@ -31908,8 +32156,9 @@ define("ember-runtime/tests/legacy_1x/system/object/concatenated_test",
         });
         var obj = subKlass.create();
 
-        var values = get(obj, 'values'),
-            expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+        var values = get(obj, 'values');
+        var expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+
         deepEqual(values, expected, EmberStringUtils.fmt("should concatenate values property (expected: %@, got: %@)", [expected, values]));
       });
 
@@ -31919,8 +32168,9 @@ define("ember-runtime/tests/legacy_1x/system/object/concatenated_test",
         });
         var obj = klass.create();
 
-        var values = get(obj, 'values'),
-            expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+        var values = get(obj, 'values');
+        var expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+
         deepEqual(values, expected, EmberStringUtils.fmt("should concatenate values property (expected: %@, got: %@)", [expected, values]));
       });
 
@@ -31933,8 +32183,9 @@ define("ember-runtime/tests/legacy_1x/system/object/concatenated_test",
         });
         var obj = subKlass.create();
 
-        var values = get(obj, 'values'),
-            expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+        var values = get(obj, 'values');
+        var expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+
         deepEqual(values, expected, EmberStringUtils.fmt("should concatenate values property (expected: %@, got: %@)", [expected, values]));
       });
 
@@ -31943,8 +32194,9 @@ define("ember-runtime/tests/legacy_1x/system/object/concatenated_test",
         var subKlass = klass.extend({ values: ['e'] });
         var obj = subKlass.create({ values: ['f'] });
 
-        var values = get(obj, 'values'),
-            expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+        var values = get(obj, 'values');
+        var expected = ['a', 'b', 'c', 'd', 'e', 'f'];
+
         deepEqual(values, expected, EmberStringUtils.fmt("should concatenate values property (expected: %@, got: %@)", [expected, values]));
       });
 
@@ -31954,8 +32206,9 @@ define("ember-runtime/tests/legacy_1x/system/object/concatenated_test",
         });
         var obj = subKlass.create();
 
-        var values = get(obj, 'functions'),
-            expected = [Ember.K, Ember.K];
+        var values = get(obj, 'functions');
+        var expected = [Ember.K, Ember.K];
+
         deepEqual(values, expected, EmberStringUtils.fmt("should concatenate functions property (expected: %@, got: %@)", [expected, values]));
       });
   });
@@ -32133,16 +32386,20 @@ define("ember-runtime/tests/legacy_1x/system/set_test",
     });
 
     test("new Set() should create empty set", function() {
-      var set = new Set() ;
-      equal(set.length, 0) ;
+      ignoreDeprecation(function() {
+        var set = new Set() ;
+        equal(set.length, 0) ;
+      });
     });
 
     test("new Set([1,2,3]) should create set with three items in them", function() {
-      var set = new Set(Ember.A([a,b,c])) ;
-      equal(set.length, 3) ;
-      equal(set.contains(a), true) ;
-      equal(set.contains(b), true) ;
-      equal(set.contains(c), true) ;
+      ignoreDeprecation(function() {
+        var set = new Set(Ember.A([a,b,c])) ;
+        equal(set.length, 3) ;
+        equal(set.contains(a), true) ;
+        equal(set.contains(b), true) ;
+        equal(set.contains(c), true) ;
+      });
     });
 
     test("new Set() should accept anything that implements EmberArray", function() {
@@ -32152,11 +32409,13 @@ define("ember-runtime/tests/legacy_1x/system/set_test",
         objectAt: function(idx) { return this._content[idx]; }
       }) ;
 
-      var set = new Set(arrayLikeObject) ;
-      equal(set.length, 3) ;
-      equal(set.contains(a), true) ;
-      equal(set.contains(b), true) ;
-      equal(set.contains(c), true) ;
+      ignoreDeprecation(function() {
+        var set = new Set(arrayLikeObject) ;
+        equal(set.length, 3) ;
+        equal(set.contains(a), true) ;
+        equal(set.contains(b), true) ;
+        equal(set.contains(c), true) ;
+      });
     });
 
     var set ; // global variables
@@ -32166,7 +32425,9 @@ define("ember-runtime/tests/legacy_1x/system/set_test",
     QUnit.module("Set.add + Set.contains", {
 
       setup: function() {
-        set = new Set() ;
+        ignoreDeprecation(function() {
+          set = new Set() ;
+        });
       },
 
       teardown: function() {
@@ -32271,11 +32532,13 @@ define("ember-runtime/tests/legacy_1x/system/set_test",
       // generate a set with every type of object, but none of the specific
       // ones we add in the tests below...
       setup: function() {
-        set = new Set(Ember.A([
-          EmberObject.create({ dummy: true }),
-          { isHash: true },
-          "Not the String",
-          16, true, false, 0])) ;
+        ignoreDeprecation(function() {
+          set = new Set(Ember.A([
+            EmberObject.create({ dummy: true }),
+            { isHash: true },
+            "Not the String",
+            16, true, false, 0])) ;
+        });
       },
 
       teardown: function() {
@@ -32380,16 +32643,18 @@ define("ember-runtime/tests/legacy_1x/system/set_test",
     // generate a set with every type of object, but none of the specific
     // ones we add in the tests below...
       setup: function() {
-        set = new Set(Ember.A([
-          EmberObject.create({ dummy: true }),
-          { isHash: true },
-          "Not the String",
-          16, false])) ;
-        },
+        ignoreDeprecation(function() {
+          set = new Set(Ember.A([
+            EmberObject.create({ dummy: true }),
+            { isHash: true },
+            "Not the String",
+            16, false])) ;
+        });
+      },
 
-        teardown: function() {
-          set = undefined ;
-        }
+      teardown: function() {
+        set = undefined ;
+      }
     });
 
     test("the pop() should remove an arbitrary object from the set", function() {
@@ -32400,16 +32665,23 @@ define("ember-runtime/tests/legacy_1x/system/set_test",
     });
 
     test("should pop false and 0", function() {
-      set = new Set(Ember.A([false]));
-      ok(set.pop() === false, "should pop false");
+      ignoreDeprecation(function() {
+        set = new Set(Ember.A([false]));
+        ok(set.pop() === false, "should pop false");
 
-      set = new Set(Ember.A([0]));
-      ok(set.pop() === 0, "should pop 0");
+        set = new Set(Ember.A([0]));
+        ok(set.pop() === 0, "should pop 0");
+      });
     });
 
     test("the copy() should return an indentical set", function() {
-      var oldLength = set.length ;
-      var obj = set.copy();
+      var oldLength = set.length;
+      var obj;
+
+      ignoreDeprecation(function() {
+        obj = set.copy();
+      });
+
       equal(oldLength,obj.length,'length of the clone should be same');
       equal(obj.contains(set[0]), true);
       equal(obj.contains(set[1]), true);
@@ -33061,7 +33333,8 @@ define("ember-runtime/tests/mixins/deferred_test",
     });
 
     test("can resolve deferred", function() {
-      var deferred, count = 0;
+      var deferred;
+      var count = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33078,7 +33351,8 @@ define("ember-runtime/tests/mixins/deferred_test",
 
     test("can reject deferred", function() {
 
-      var deferred, count = 0;
+      var deferred;
+      var count = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33095,7 +33369,9 @@ define("ember-runtime/tests/mixins/deferred_test",
 
     test("can resolve with then", function() {
 
-      var deferred, count1 = 0 ,count2 = 0;
+      var deferred;
+      var count1 = 0;
+      var count2 = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33115,7 +33391,9 @@ define("ember-runtime/tests/mixins/deferred_test",
 
     test("can reject with then", function() {
 
-      var deferred, count1 = 0 ,count2 = 0;
+      var deferred;
+      var count1 = 0;
+      var count2 = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33135,7 +33413,8 @@ define("ember-runtime/tests/mixins/deferred_test",
 
     test("can call resolve multiple times", function() {
 
-      var deferred, count = 0;
+      var deferred;
+      var count = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33155,7 +33434,10 @@ define("ember-runtime/tests/mixins/deferred_test",
     });
 
     test("resolve prevent reject", function() {
-      var deferred, resolved = false, rejected = false, progress = 0;
+      var deferred;
+      var resolved = false;
+      var rejected = false;
+      var progress = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33175,7 +33457,10 @@ define("ember-runtime/tests/mixins/deferred_test",
     });
 
     test("reject prevent resolve", function() {
-      var deferred, resolved = false, rejected = false, progress = 0;
+      var deferred;
+      var resolved = false;
+      var rejected = false;
+      var progress = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33196,7 +33481,8 @@ define("ember-runtime/tests/mixins/deferred_test",
 
     test("will call callbacks if they are added after resolution", function() {
 
-      var deferred, count1 = 0;
+      var deferred;
+      var count1 = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33222,7 +33508,8 @@ define("ember-runtime/tests/mixins/deferred_test",
     });
 
     test("then is chainable", function() {
-      var deferred, count = 0;
+      var deferred;
+      var count = 0;
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33276,7 +33563,8 @@ define("ember-runtime/tests/mixins/deferred_test",
 
     test("can fulfill to a custom value", function() {
       expect(1);
-      var deferred, obj = {};
+      var deferred;
+      var obj = {};
 
       run(function() {
         deferred = EmberObject.createWithMixins(Deferred);
@@ -33314,7 +33602,8 @@ define("ember-runtime/tests/mixins/deferred_test",
 
     test("can do multi level assimilation", function() {
       expect(1);
-      var firstDeferred, secondDeferred, firstDeferredResolved = false;
+      var firstDeferred, secondDeferred;
+      var firstDeferredResolved = false;
 
       run(function() {
         firstDeferred = EmberObject.createWithMixins(Deferred);
@@ -33374,7 +33663,8 @@ define("ember-runtime/tests/mixins/deferred_test",
 
     if (!EmberDev.runningProdBuild){
       test("causes a deprecation warning when used", function() {
-        var deferred, deprecationMade, obj = {};
+        var deferred, deprecationMade;
+        var obj = {};
 
         Ember.deprecate = function(message) {
           deprecationMade = message;
@@ -33519,9 +33809,9 @@ define("ember-runtime/tests/mixins/enumerable_test",
         color: 'black'
       }, {
         color: 'white'
-      }]),
-      foundWhite = kittens.any(function(kitten) { return kitten.color === 'white'; }),
-      foundWhite2 = kittens.isAny('color', 'white');
+      }]);
+      var foundWhite = kittens.any(function(kitten) { return kitten.color === 'white'; });
+      var foundWhite2 = kittens.isAny('color', 'white');
 
       equal(foundWhite, true);
       equal(foundWhite2, true);
@@ -33542,16 +33832,16 @@ define("ember-runtime/tests/mixins/enumerable_test",
         color: 'black'
       }, {
         color: 'white'
-      }]),
-      allWhiteKittens = Ember.A([{
+      }]);
+      var allWhiteKittens = Ember.A([{
         color: 'white'
       }, {
         color: 'white'
       }, {
         color: 'white'
-      }]),
-      allWhite = false,
-      whiteKittenPredicate = function(kitten) { return kitten.color === 'white'; };
+      }]);
+      var allWhite = false;
+      var whiteKittenPredicate = function(kitten) { return kitten.color === 'white'; };
 
       allWhite = allColorsKittens.every(whiteKittenPredicate);
       equal(allWhite, false);
@@ -33633,7 +33923,9 @@ define("ember-runtime/tests/mixins/enumerable_test",
 
     // API variation that included items only
     test('should not notify when passed arrays of same length', function() {
-      var added = ['foo'], removed = ['bar'];
+      var added = ['foo'];
+      var removed = ['bar'];
+
       obj.enumerableContentWillChange(removed, added);
       equal(obj._after, 0);
 
@@ -33642,7 +33934,9 @@ define("ember-runtime/tests/mixins/enumerable_test",
     });
 
     test('should notify when passed arrays of different length', function() {
-      var added = ['foo'], removed = ['bar', 'baz'];
+      var added = ['foo'];
+      var removed = ['bar', 'baz'];
+
       obj.enumerableContentWillChange(removed, added);
       equal(obj._after, 0);
 
@@ -33709,7 +34003,9 @@ define("ember-runtime/tests/mixins/enumerable_test",
 
     // API variation that included items only
     test('should notify when called with same length items', function() {
-      var added = ['foo'], removed = ['bar'];
+      var added = ['foo'];
+      var removed = ['bar'];
+
       obj.enumerableContentWillChange(removed, added);
       deepEqual(observer._before, [obj, removed, added]);
 
@@ -33718,7 +34014,9 @@ define("ember-runtime/tests/mixins/enumerable_test",
     });
 
     test('should notify when called with diff length items', function() {
-      var added = ['foo', 'baz'], removed = ['bar'];
+      var added = ['foo', 'baz'];
+      var removed = ['bar'];
+
       obj.enumerableContentWillChange(removed, added);
       deepEqual(observer._before, [obj, removed, added]);
 
@@ -33775,9 +34073,9 @@ define("ember-runtime/tests/mixins/mutable_array_test",
 
       replace: function(idx, amt, objects) {
 
-        var args = objects ? objects.slice() : [],
-            removeAmt = amt,
-            addAmt    = args.length;
+        var args = objects ? objects.slice() : [];
+        var removeAmt = amt;
+        var addAmt    = args.length;
 
         this.arrayContentWillChange(idx, removeAmt, addAmt);
 
@@ -34270,6 +34568,34 @@ define("ember-runtime/tests/mixins/promise_proxy_test",
       equal(get(proxy, 'isRejected'),  true,  'expects the proxy to indicate that it is  rejected');
       equal(get(proxy, 'isFulfilled'), false, 'expects the proxy to indicate that it is not fulfilled');
     });
+
+    test("should have content when isFulfilled is set", function() {
+      var deferred = EmberRSVP.defer();
+
+      var proxy = ObjectPromiseProxy.create({
+        promise: deferred.promise
+      });
+
+      proxy.addObserver('isFulfilled', function() {
+        equal(get(proxy, 'content'), true);
+      });
+
+      run(deferred, 'resolve', true);
+    });
+
+    test("should have reason when isRejected is set", function() {
+      var deferred = EmberRSVP.defer();
+
+      var proxy = ObjectPromiseProxy.create({
+        promise: deferred.promise
+      });
+
+      proxy.addObserver('isRejected', function() {
+        equal(get(proxy, 'reason'), true);
+      });
+
+      run(deferred, 'reject', true);
+    });
   });
 define("ember-runtime/tests/mixins/promise_proxy_test.jshint",
   [],
@@ -34355,7 +34681,8 @@ define("ember-runtime/tests/mixins/sortable_test",
     });
 
     test("changing sort order triggers observers", function() {
-      var observer, changeCount = 0;
+      var observer;
+      var changeCount = 0;
       observer = EmberObject.createWithMixins({
         array: sortedArrayController,
         arrangedDidChange: emberObserver('array.[]', function() {
@@ -34507,7 +34834,8 @@ define("ember-runtime/tests/mixins/sortable_test",
     });
 
     test("addObject does not insert duplicates", function() {
-      var sortedArrayProxy, obj = {};
+      var sortedArrayProxy;
+      var obj = {};
       sortedArrayProxy = ArrayProxy.createWithMixins(SortableMixin, {
         content: Ember.A([obj])
       });
@@ -34598,8 +34926,8 @@ define("ember-runtime/tests/mixins/sortable_test",
           sortedArrayController = ArrayController.create({
             sortProperties: ['name'],
             sortFunction: function(v, w) {
-                var lowerV = v.toLowerCase(),
-                    lowerW = w.toLowerCase();
+                var lowerV = v.toLowerCase();
+                var lowerW = w.toLowerCase();
 
                 if (lowerV < lowerW) {
                   return -1;
@@ -34640,8 +34968,8 @@ define("ember-runtime/tests/mixins/sortable_test",
         sortedArrayController = ArrayProxy.createWithMixins(SortableMixin, {
           sortProperties: ['name'],
           sortFunction: function(v, w) {
-                var lowerV = v.toLowerCase(),
-                    lowerW = w.toLowerCase();
+                var lowerV = v.toLowerCase();
+                var lowerW = w.toLowerCase();
 
                 if (lowerV < lowerW) {
                   return -1;
@@ -34793,10 +35121,11 @@ define("ember-runtime/tests/mixins/target_action_support_test",
             anEvent: function() {
               ok(true, "anEvent method was called");
             }
-          }),
-          obj = EmberObject.createWithMixins(TargetActionSupport,{
+          });
+      var obj = EmberObject.createWithMixins(TargetActionSupport,{
             action: 'anEvent'
           });
+
       ok(true === obj.triggerAction({target: targetObj}), "a valid target and action were specified");
     });
 
@@ -34815,8 +35144,8 @@ define("ember-runtime/tests/mixins/target_action_support_test",
 
     test("it should use the actionContext specified in the argument", function() {
       expect(2);
-      var context = {},
-          obj = EmberObject.createWithMixins(TargetActionSupport,{
+      var context = {};
+      var obj = EmberObject.createWithMixins(TargetActionSupport,{
         target: EmberObject.create({
           anEvent: function(ctx) {
             ok(context === ctx, "anEvent method was called with the expected context");
@@ -34824,14 +35153,15 @@ define("ember-runtime/tests/mixins/target_action_support_test",
         }),
         action: 'anEvent'
       });
+
       ok(true === obj.triggerAction({actionContext: context}), "a valid target and action were specified");
     });
 
     test("it should allow multiple arguments from actionContext", function() {
       expect(3);
-      var param1 = 'someParam',
-          param2 = 'someOtherParam',
-          obj = EmberObject.createWithMixins(TargetActionSupport,{
+      var param1 = 'someParam';
+      var param2 = 'someOtherParam';
+      var obj = EmberObject.createWithMixins(TargetActionSupport,{
         target: EmberObject.create({
           anEvent: function(first, second) {
             ok(first === param1, "anEvent method was called with the expected first argument");
@@ -34840,6 +35170,7 @@ define("ember-runtime/tests/mixins/target_action_support_test",
         }),
         action: 'anEvent'
       });
+
       ok(true === obj.triggerAction({actionContext: [param1, param2]}), "a valid target and action were specified");
     });
 
@@ -35008,10 +35339,10 @@ define("ember-runtime/tests/suites/array/indexOf",
     suite.module('indexOf');
 
     suite.test("should return index of object", function() {
-      var expected = this.newFixture(3),
-          obj      = this.newObject(expected),
-          len      = 3,
-          idx;
+      var expected = this.newFixture(3);
+      var obj      = this.newObject(expected);
+      var len      = 3;
+      var idx;
 
       for(idx=0;idx<len;idx++) {
         equal(obj.indexOf(expected[idx]), idx, fmt('obj.indexOf(%@) should match idx', [expected[idx]]));
@@ -35020,7 +35351,9 @@ define("ember-runtime/tests/suites/array/indexOf",
     });
 
     suite.test("should return -1 when requesting object not in index", function() {
-      var obj = this.newObject(this.newFixture(3)), foo = {};
+      var obj = this.newObject(this.newFixture(3));
+      var foo = {};
+
       equal(obj.indexOf(foo), -1, 'obj.indexOf(foo) should be < 0');
     });
 
@@ -35047,10 +35380,10 @@ define("ember-runtime/tests/suites/array/lastIndexOf",
     suite.module('lastIndexOf');
 
     suite.test("should return index of object's last occurrence", function() {
-      var expected = this.newFixture(3),
-          obj      = this.newObject(expected),
-          len      = 3,
-          idx;
+      var expected = this.newFixture(3);
+      var obj      = this.newObject(expected);
+      var len      = 3;
+      var idx;
 
       for(idx=0;idx<len;idx++) {
         equal(obj.lastIndexOf(expected[idx]), idx,
@@ -35060,10 +35393,10 @@ define("ember-runtime/tests/suites/array/lastIndexOf",
     });
 
     suite.test("should return index of object's last occurrence even startAt search location is equal to length", function() {
-      var expected = this.newFixture(3),
-          obj      = this.newObject(expected),
-          len      = 3,
-          idx;
+      var expected = this.newFixture(3);
+      var obj      = this.newObject(expected);
+      var len      = 3;
+      var idx;
 
       for(idx=0;idx<len;idx++) {
         equal(obj.lastIndexOf(expected[idx], len), idx,
@@ -35073,10 +35406,10 @@ define("ember-runtime/tests/suites/array/lastIndexOf",
     });
 
     suite.test("should return index of object's last occurrence even startAt search location is greater than length", function() {
-      var expected = this.newFixture(3),
-          obj      = this.newObject(expected),
-          len      = 3,
-          idx;
+      var expected = this.newFixture(3);
+      var obj      = this.newObject(expected);
+      var len      = 3;
+      var idx;
 
       for(idx=0;idx<len;idx++) {
         equal(obj.lastIndexOf(expected[idx], len + 1), idx,
@@ -35086,17 +35419,23 @@ define("ember-runtime/tests/suites/array/lastIndexOf",
     });
 
     suite.test("should return -1 when no match is found", function() {
-      var obj = this.newObject(this.newFixture(3)), foo = {};
+      var obj = this.newObject(this.newFixture(3));
+      var foo = {};
+
       equal(obj.lastIndexOf(foo), -1, 'obj.lastIndexOf(foo) should be -1');
     });
 
     suite.test("should return -1 when no match is found even startAt search location is equal to length", function() {
-      var obj = this.newObject(this.newFixture(3)), foo = {};
+      var obj = this.newObject(this.newFixture(3));
+      var foo = {};
+
       equal(obj.lastIndexOf(foo, obj.length), -1, 'obj.lastIndexOf(foo) should be -1');
     });
 
     suite.test("should return -1 when no match is found even startAt search location is greater than length", function() {
-      var obj = this.newObject(this.newFixture(3)), foo = {};
+      var obj = this.newObject(this.newFixture(3));
+      var foo = {};
+
       equal(obj.lastIndexOf(foo, obj.length + 1), -1, 'obj.lastIndexOf(foo) should be -1');
     });
 
@@ -35123,10 +35462,10 @@ define("ember-runtime/tests/suites/array/objectAt",
     suite.module('objectAt');
 
     suite.test("should return object at specified index", function() {
-      var expected = this.newFixture(3),
-          obj      = this.newObject(expected),
-          len      = expected.length,
-          idx;
+      var expected = this.newFixture(3);
+      var obj      = this.newObject(expected);
+      var len      = expected.length;
+      var idx;
 
       for(idx=0;idx<len;idx++) {
         equal(obj.objectAt(idx), expected[idx], fmt('obj.objectAt(%@) should match', [idx]));
@@ -35346,8 +35685,9 @@ define("ember-runtime/tests/suites/enumerable",
 
       observeBefore: function(obj) {
         if (obj.addBeforeObserver) {
-          var keys = Array.prototype.slice.call(arguments, 1),
-              loc  = keys.length;
+          var keys = Array.prototype.slice.call(arguments, 1);
+          var loc  = keys.length;
+
           while(--loc>=0) obj.addBeforeObserver(keys[loc], this, 'propertyWillChange');
         }
         return this;
@@ -35364,8 +35704,9 @@ define("ember-runtime/tests/suites/enumerable",
       */
       observe: function(obj) {
         if (obj.addObserver) {
-          var keys = Array.prototype.slice.call(arguments, 1),
-              loc  = keys.length;
+          var keys = Array.prototype.slice.call(arguments, 1);
+          var loc  = keys.length;
+
           while(--loc>=0) obj.addObserver(keys[loc], this, 'propertyDidChange');
         } else {
           this.isEnabled = false;
@@ -35616,9 +35957,10 @@ define("ember-runtime/tests/suites/enumerable/any",
     suite.module('any');
 
     suite.test('any should should invoke callback on each item as long as you return false', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          found = [], result;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var found = [];
+      var result;
 
       result = obj.any(function(i) { found.push(i); return false; });
       equal(result, false, 'return value of obj.any');
@@ -35626,11 +35968,12 @@ define("ember-runtime/tests/suites/enumerable/any",
     });
 
     suite.test('any should stop invoking when you return true', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          cnt = ary.length - 2,
-          exp = cnt,
-          found = [], result;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var cnt = ary.length - 2;
+      var exp = cnt;
+      var found = [];
+      var result;
 
       result = obj.any(function(i) { found.push(i); return --cnt <= 0; });
       equal(result, true, 'return value of obj.any');
@@ -35640,7 +35983,8 @@ define("ember-runtime/tests/suites/enumerable/any",
 
 
     suite.test('any should return true if any object matches the callback', function() {
-      var obj = Ember.A([0, 1, 2]), result;
+      var obj = Ember.A([0, 1, 2]);
+      var result;
 
       result = obj.any(function(i) { return !!i; });
       equal(result, true, 'return value of obj.any');
@@ -35648,7 +35992,8 @@ define("ember-runtime/tests/suites/enumerable/any",
 
 
     suite.test('any should return false if no object matches the callback', function() {
-      var obj = Ember.A([0, null, false]), result;
+      var obj = Ember.A([0, null, false]);
+      var result;
 
       result = obj.any(function(i) { return !!i; });
       equal(result, false, 'return value of obj.any');
@@ -35656,7 +36001,8 @@ define("ember-runtime/tests/suites/enumerable/any",
 
 
     suite.test('any should produce correct results even if the matching element is undefined', function() {
-      var obj = Ember.A([undefined]), result;
+      var obj = Ember.A([undefined]);
+      var result;
 
       result = obj.any(function(i) { return true; });
       equal(result, true, 'return value of obj.any');
@@ -35664,12 +36010,13 @@ define("ember-runtime/tests/suites/enumerable/any",
 
 
     suite.test('any should be aliased to some', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          anyFound = [], anyResult,
-          someFound = [], someResult,
-          cnt = ary.length - 2,
-          exp = cnt;
+      var obj = this.newObject();
+          var ary = this.toArray(obj);
+          var anyFound = [];
+          var someFound = [];
+          var cnt = ary.length - 2;
+          var exp = cnt;
+          var anyResult, someResult;
 
       anyResult = obj.any(function(i) { anyFound.push(i); return false; });
       someResult = obj.some(function(i) { someFound.push(i); return false; });
@@ -35773,9 +36120,10 @@ define("ember-runtime/tests/suites/enumerable/every",
     suite.module('every');
 
     suite.test('every should should invoke callback on each item as long as you return true', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          found = [], result;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var found = [];
+      var result;
 
       result = obj.every(function(i) { found.push(i); return true; });
       equal(result, true, 'return value of obj.every');
@@ -35783,11 +36131,12 @@ define("ember-runtime/tests/suites/enumerable/every",
     });
 
     suite.test('every should stop invoking when you return false', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          cnt = ary.length - 2,
-          exp = cnt,
-          found = [], result;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var cnt = ary.length - 2;
+      var exp = cnt;
+      var found = [];
+      var result;
 
       result = obj.every(function(i) { found.push(i); return --cnt>0; });
       equal(result, false, 'return value of obj.every');
@@ -35879,10 +36228,11 @@ define("ember-runtime/tests/suites/enumerable/filter",
     suite.module('filter');
 
     suite.test('filter should invoke on each item', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          cnt = ary.length - 2,
-          found = [], result;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var cnt = ary.length - 2;
+      var found = [];
+      var result;
 
       // return true on all but the last two
       result = obj.filter(function(i) { found.push(i); return --cnt>=0; });
@@ -36034,9 +36384,10 @@ define("ember-runtime/tests/suites/enumerable/find",
     suite.module('find');
 
     suite.test('find should invoke callback on each item as long as you return false', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          found = [], result;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var found = [];
+      var result;
 
       result = obj.find(function(i) { found.push(i); return false; });
       equal(result, undefined, 'return value of obj.find');
@@ -36044,11 +36395,12 @@ define("ember-runtime/tests/suites/enumerable/find",
     });
 
     suite.test('every should stop invoking when you return true', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          cnt = ary.length - 2,
-          exp = cnt,
-          found = [], result;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var cnt = ary.length - 2;
+      var exp = cnt;
+      var found = [];
+      var result;
 
       result = obj.find(function(i) { found.push(i); return --cnt >= 0; });
       equal(result, ary[exp-1], 'return value of obj.find');
@@ -36184,9 +36536,9 @@ define("ember-runtime/tests/suites/enumerable/forEach",
     suite.module('forEach');
 
     suite.test('forEach should iterate over list', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          found = [];
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var found = [];
 
       obj.forEach(function(i) { found.push(i); });
       deepEqual(found, ary, 'items passed during forEach should match');
@@ -36199,9 +36551,9 @@ define("ember-runtime/tests/suites/enumerable/forEach",
         return ;
       }
 
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          found = [];
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var found = [];
 
       obj.forEach(function(i) { found.push(i); });
       deepEqual(found, ary, 'items passed during forEach should match');
@@ -36215,7 +36567,8 @@ define("ember-runtime/tests/suites/enumerable/forEach",
     });
 
     suite.test('2nd target parameter', function() {
-      var obj = this.newObject(), target = this;
+      var obj = this.newObject();
+      var target = this;
 
       obj.forEach(function() {
         // ES6TODO: When transpiled we will end up with "use strict" which disables automatically binding to the global context.
@@ -36233,9 +36586,9 @@ define("ember-runtime/tests/suites/enumerable/forEach",
 
 
     suite.test('callback params', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          loc = 0;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var loc = 0;
 
 
       obj.forEach(function(item, idx, enumerable) {
@@ -36406,13 +36759,15 @@ define("ember-runtime/tests/suites/enumerable/lastObject",
     suite.module('lastObject');
 
     suite.test('returns last item in enumerable', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj);
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+
       equal(get(obj, 'lastObject'), ary[ary.length-1]);
     });
 
     suite.test('returns undefined if enumerable is empty', function() {
       var obj = this.newObject([]);
+
       equal(get(obj, 'lastObject'), undefined);
     });
 
@@ -36436,16 +36791,17 @@ define("ember-runtime/tests/suites/enumerable/map",
     var get = __dependency3__.get;
     var guidFor = __dependency4__.guidFor;
 
-    var suite = SuiteModuleBuilder.create(), global = this;
+    var suite = SuiteModuleBuilder.create();
+    var global = this;
 
     suite.module('map');
 
     function mapFunc(item) { return item ? item.toString() : null; }
 
     suite.test('map should iterate over list', function() {
-      var obj = this.newObject(),
-          ary = EnumerableUtils.map(this.toArray(obj), mapFunc),
-          found = [];
+      var obj = this.newObject();
+      var ary = EnumerableUtils.map(this.toArray(obj), mapFunc);
+      var found = [];
 
       found = obj.map(mapFunc);
       deepEqual(found, ary, 'mapped arrays should match');
@@ -36458,9 +36814,9 @@ define("ember-runtime/tests/suites/enumerable/map",
         return ;
       }
 
-      var obj = this.newObject(),
-          ary = this.toArray(obj).map(mapFunc),
-          found;
+      var obj = this.newObject();
+      var ary = this.toArray(obj).map(mapFunc);
+      var found;
 
       found = obj.map(mapFunc);
       deepEqual(found, ary, 'items passed during forEach should match');
@@ -36472,7 +36828,8 @@ define("ember-runtime/tests/suites/enumerable/map",
     });
 
     suite.test('2nd target parameter', function() {
-      var obj = this.newObject(), target = this;
+      var obj = this.newObject();
+      var target = this;
 
 
       obj.map(function() {
@@ -36491,9 +36848,9 @@ define("ember-runtime/tests/suites/enumerable/map",
 
 
     suite.test('callback params', function() {
-      var obj = this.newObject(),
-          ary = this.toArray(obj),
-          loc = 0;
+      var obj = this.newObject();
+      var ary = this.toArray(obj);
+      var loc = 0;
 
 
       obj.map(function(item, idx, enumerable) {
@@ -36607,17 +36964,17 @@ define("ember-runtime/tests/suites/enumerable/reject",
     suite.module('reject');
 
     suite.test('should reject any item that does not meet the condition', function() {
-      var obj = this.newObject([1,2,3,4]),
-          result;
+      var obj = this.newObject([1,2,3,4]);
+      var result;
 
       result = obj.reject(function(i) { return i < 3; });
       deepEqual(result, [3,4], 'reject the correct items');
     });
 
     suite.test('should be the inverse of filter', function() {
-      var obj = this.newObject([1,2,3,4]),
-          isEven = function(i) { return i % 2 === 0; },
-          filtered, rejected;
+      var obj = this.newObject([1,2,3,4]);
+      var isEven = function(i) { return i % 2 === 0; };
+      var filtered, rejected;
 
       filtered = obj.filter(isEven);
       rejected = obj.reject(isEven);
@@ -36770,15 +37127,17 @@ define("ember-runtime/tests/suites/enumerable/sortBy",
     suite.module('sortBy');
 
     suite.test('sort by value of property', function() {
-      var obj = this.newObject([{a: 2},{a: 1}]),
-      sorted = obj.sortBy('a');
+      var obj = this.newObject([{a: 2},{a: 1}]);
+      var sorted = obj.sortBy('a');
+
       equal(get(sorted[0], 'a'), 1);
       equal(get(sorted[1], 'a'), 2);
     });
 
     suite.test('supports multiple propertyNames', function() {
-      var obj = this.newObject([{a: 1, b: 2},{a: 1, b: 1}]),
-      sorted = obj.sortBy('a', 'b');
+      var obj = this.newObject([{a: 1, b: 2},{a: 1, b: 1}]);
+      var sorted = obj.sortBy('a', 'b');
+
       equal(get(sorted[0], 'b'), 1);
       equal(get(sorted[1], 'b'), 2);
     });
@@ -37124,7 +37483,9 @@ define("ember-runtime/tests/suites/mutable_array/insertAt",
     });
 
     suite.test("[].insertAt(200,X) => OUT_OF_RANGE_EXCEPTION exception", function() {
-      var obj = this.newObject([]), that = this;
+      var obj = this.newObject([]);
+      var that = this;
+
       raises(function() {
         obj.insertAt(200, that.newFixture(1)[0]);
       }, Error);
@@ -37191,7 +37552,9 @@ define("ember-runtime/tests/suites/mutable_array/insertAt",
     });
 
     suite.test("[A].insertAt(200,X) => OUT_OF_RANGE exception", function() {
-      var obj = this.newObject(this.newFixture(1)), that = this;
+      var obj = this.newObject(this.newFixture(1));
+      var that = this;
+
       raises(function() {
         obj.insertAt(200, that.newFixture(1)[0]);
       }, Error);
@@ -38716,11 +39079,13 @@ define("ember-runtime/tests/suites/suite",
 
       module: function(desc, opts) {
         if (!opts) opts = {};
-        var setup = opts.setup, teardown = opts.teardown;
+        var setup = opts.setup;
+        var teardown = opts.teardown;
         this.reopen({
           run: function() {
             this._super();
-            var title = get(this, 'name')+': '+desc, ctx = this;
+            var title = get(this, 'name')+': '+desc;
+            var ctx = this;
             QUnit.module(title, {
               setup: function() {
                 if (setup) setup.call(ctx);
@@ -39158,8 +39523,8 @@ define("ember-runtime/tests/system/array_proxy/content_change_test",
     });
 
     test("The `arrangedContentWillChange` method is invoked before `content` is changed.", function() {
-      var callCount = 0,
-          expectedLength;
+      var callCount = 0;
+      var expectedLength;
 
       var proxy = ArrayProxy.extend({
         content: Ember.A([1, 2, 3]),
@@ -39182,8 +39547,8 @@ define("ember-runtime/tests/system/array_proxy/content_change_test",
     });
 
     test("The `arrangedContentDidChange` method is invoked after `content` is changed.", function() {
-      var callCount = 0,
-          expectedLength;
+      var callCount = 0;
+      var expectedLength;
 
       var proxy = ArrayProxy.extend({
         content: Ember.A([1, 2, 3]),
@@ -39241,7 +39606,8 @@ define("ember-runtime/tests/system/array_proxy/content_update_test",
 
     test("The `contentArrayDidChange` method is invoked after `content` is updated.", function() {
 
-      var proxy, observerCalled = false;
+      var proxy;
+      var observerCalled = false;
 
       proxy = ArrayProxy.createWithMixins({
         content: Ember.A(),
@@ -39742,8 +40108,8 @@ define("ember-runtime/tests/system/object/computed_test",
         count: 20
       });
 
-      var obj1 = new MyClass(),
-          obj2 = new Subclass();
+      var obj1 = new MyClass();
+      var obj2 = new Subclass();
 
       equal(get(obj1, 'foo'), 'BIFF 1');
       equal(get(obj2, 'foo'), 'BIFF 21');
@@ -40059,8 +40425,8 @@ define("ember-runtime/tests/system/object/create_test",
     });
 
     test("inherits properties from passed in EmberObject", function() {
-      var baseObj = EmberObject.create({ foo: 'bar' }),
-          secondaryObj = EmberObject.create(baseObj);
+      var baseObj = EmberObject.create({ foo: 'bar' });
+      var secondaryObj = EmberObject.create(baseObj);
 
       equal(secondaryObj.foo, baseObj.foo, "Em.O.create inherits properties from EmberObject parameter");
     });
@@ -40262,8 +40628,8 @@ define("ember-runtime/tests/system/object/create_test",
     test("created objects should not share a guid with their superclass", function() {
       ok(guidFor(EmberObject), "EmberObject has a guid");
 
-      var objA = EmberObject.createWithMixins(),
-          objB = EmberObject.createWithMixins();
+      var objA = EmberObject.createWithMixins();
+      var objB = EmberObject.createWithMixins();
 
       ok(guidFor(objA) !== guidFor(objB), "two instances do not share a guid");
     });
@@ -40296,7 +40662,8 @@ define("ember-runtime/tests/system/object/destroy_test",
     QUnit.module('ember-runtime/system/object/destroy_test');
 
     testBoth("should schedule objects to be destroyed at the end of the run loop", function(get, set) {
-      var obj = EmberObject.create(), meta;
+      var obj = EmberObject.create();
+      var meta;
 
       run(function() {
         obj.destroy();
@@ -40353,7 +40720,8 @@ define("ember-runtime/tests/system/object/destroy_test",
     });
 
     test("destroyed objects should not see each others changes during teardown but a long lived object should", function () {
-      var shouldChange = 0, shouldNotChange = 0;
+      var shouldChange = 0;
+      var shouldNotChange = 0;
 
       var objs = {};
 
@@ -40474,10 +40842,10 @@ define("ember-runtime/tests/system/object/detectInstance_test",
       var B = A.extend();
       var C = A.extend();
 
-      var o = EmberObject.create(),
-          a = A.create(),
-          b = B.create(),
-          c = C.create();
+      var o = EmberObject.create();
+      var a = A.create();
+      var b = B.create();
+      var c = C.create();
 
       ok( EmberObject.detectInstance(o), 'o is an instance of EmberObject' );
       ok( EmberObject.detectInstance(a), 'a is an instance of EmberObject' );
@@ -40613,7 +40981,8 @@ define("ember-runtime/tests/system/object/events_test",
     });
 
     test("a listener can be added and removed automatically and have arguments", function() {
-      var self, args, count = 0;
+      var self, args;
+      var count = 0;
 
       var obj = EmberObject.createWithMixins(Evented);
 
@@ -41289,7 +41658,8 @@ define("ember-runtime/tests/system/object/toString_test",
     });
 
     test("toString on a namespace finds the namespace in Ember.lookup", function() {
-      var Foo = lookup.Foo = Namespace.create(), obj;
+      var Foo = lookup.Foo = Namespace.create();
+      var obj;
 
       Foo.Bar = EmberObject.extend();
 
@@ -41304,13 +41674,14 @@ define("ember-runtime/tests/system/object/toString_test",
             toStringExtension: function() {
               return "fooey";
             }
-          }),
-          foo = Foo.create(),
-          Bar = EmberObject.extend({}),
-          bar = Bar.create();
-        // simulate these classes being defined on a Namespace
-        Foo[GUID_KEY+'_name'] = 'Foo';
-        Bar[GUID_KEY+'_name'] = 'Bar';
+          });
+      var foo = Foo.create();
+      var Bar = EmberObject.extend({});
+      var bar = Bar.create();
+
+      // simulate these classes being defined on a Namespace
+      Foo[GUID_KEY+'_name'] = 'Foo';
+      Bar[GUID_KEY+'_name'] = 'Bar';
 
       equal(bar.toString(), '<Bar:'+guidFor(bar)+'>', 'does not include toStringExtension part');
       equal(foo.toString(), '<Foo:'+guidFor(foo)+':fooey>', 'Includes toStringExtension result');
@@ -41361,8 +41732,8 @@ define("ember-runtime/tests/system/object_proxy_test",
             firstName: 'Tom',
             lastName: 'Dale',
             unknownProperty: function (key) { return key + ' unknown';}
-          },
-          proxy = ObjectProxy.create();
+          };
+      var proxy = ObjectProxy.create();
 
       equal(get(proxy, 'firstName'), undefined, 'get on proxy without content should return undefined');
       expectAssertion(function () {
@@ -41387,17 +41758,16 @@ define("ember-runtime/tests/system/object_proxy_test",
     });
 
     testBoth("should work with watched properties", function(get, set) {
-      var content1 = {firstName: 'Tom', lastName: 'Dale'},
-        content2 = {firstName: 'Yehuda', lastName: 'Katz'},
-        Proxy,
-        proxy,
-        count = 0,
-        last;
+      var content1 = {firstName: 'Tom', lastName: 'Dale'};
+      var content2 = {firstName: 'Yehuda', lastName: 'Katz'};
+      var count = 0;
+      var Proxy, proxy, last;
 
       Proxy = ObjectProxy.extend({
         fullName: computed(function () {
-          var firstName = this.get('firstName'),
-              lastName = this.get('lastName');
+          var firstName = this.get('firstName');
+          var lastName = this.get('lastName');
+
           if (firstName && lastName) {
             return firstName + ' ' + lastName;
           }
@@ -41449,9 +41819,10 @@ define("ember-runtime/tests/system/object_proxy_test",
     });
 
     test("set and get should work with paths", function () {
-      var content = {foo: {bar: 'baz'}},
-          proxy = ObjectProxy.create({content: content}),
-          count = 0;
+      var content = {foo: {bar: 'baz'}};
+      var proxy = ObjectProxy.create({content: content});
+      var count = 0;
+
       proxy.set('foo.bar', 'hello');
       equal(proxy.get('foo.bar'), 'hello');
       equal(proxy.get('content.foo.bar'), 'hello');
@@ -41468,9 +41839,9 @@ define("ember-runtime/tests/system/object_proxy_test",
     });
 
     testBoth("should transition between watched and unwatched strategies", function(get, set) {
-      var content = {foo: 'foo'},
-          proxy = ObjectProxy.create({content: content}),
-          count = 0;
+      var content = {foo: 'foo'};
+      var proxy = ObjectProxy.create({content: content});
+      var count = 0;
 
       function observer() {
         count++;
@@ -41543,12 +41914,29 @@ define("ember-runtime/tests/system/set/copyable_suite_test",
     var generateGuid = __dependency3__.generateGuid;
     var get = __dependency4__.get;
 
+    ignoreDeprecation(function() {
     CopyableTests.extend({
       name: 'Ember.Set Copyable',
 
       newObject: function() {
-        var set = new Set();
+        var set, originalCopy;
+        ignoreDeprecation(function() {
+          set = new Set();
+        });
+
         set.addObject(generateGuid());
+
+        originalCopy = set.copy;
+        set.copy = function() {
+          var ret;
+
+          ignoreDeprecation(function() {
+            ret = originalCopy.apply(set, arguments);
+          });
+
+          return ret;
+        };
+
         return set;
       },
 
@@ -41560,6 +41948,8 @@ define("ember-runtime/tests/system/set/copyable_suite_test",
 
       shouldBeFreezable: true
     }).run();
+
+    });
   });
 define("ember-runtime/tests/system/set/copyable_suite_test.jshint",
   [],
@@ -41583,18 +41973,31 @@ define("ember-runtime/tests/system/set/enumerable_suite_test",
       name: 'Ember.Set',
 
       newObject: function(ary) {
+        var ret;
         ary = ary ? ary.slice() : this.newFixture(3);
-        var ret = new Set();
-        ret.addObjects(ary);
+
+        ignoreDeprecation(function() {
+          ret =  new Set();
+          ret.addObjects(ary);
+        });
+
         return ret;
       },
 
       mutate: function(obj) {
-        obj.addObject(get(obj, 'length')+1);
+        ignoreDeprecation(function() {
+          obj.addObject(get(obj, 'length')+1);
+        });
       },
 
       toArray: function(obj) {
-        return obj.toArray ? obj.toArray() : obj.slice(); // make a copy.
+        var ret;
+
+        ignoreDeprecation(function() {
+          ret = obj.toArray ? obj.toArray() : obj.slice(); // make a copy.
+        });
+
+        return ret;
       }
 
     }).run();
@@ -41621,10 +42024,14 @@ define("ember-runtime/tests/system/set/extra_test",
     QUnit.module('Set.init');
 
     test('passing an array to new Set() should instantiate w/ items', function() {
+      var aSet;
 
       var ary  = [1,2,3];
-      var aSet = new Set(ary);
       var count = 0;
+
+      ignoreDeprecation(function() {
+        aSet = new Set(ary);
+      });
 
       equal(get(aSet, 'length'), 3, 'should have three items');
       aSet.forEach(function(x) {
@@ -41637,9 +42044,12 @@ define("ember-runtime/tests/system/set/extra_test",
     QUnit.module('Set.clear');
 
     test('should clear a set of its content', function() {
-
-      var aSet = new Set([1,2,3]);
+      var aSet;
       var count = 0;
+
+      ignoreDeprecation(function() {
+        aSet = new Set([1,2,3]);
+      });
 
       equal(get(aSet, 'length'), 3, 'should have three items');
       ok(get(aSet, 'firstObject'), 'firstObject should return an object');
@@ -41665,9 +42075,13 @@ define("ember-runtime/tests/system/set/extra_test",
     QUnit.module('Set.pop');
 
     test('calling pop should return an object and remove it', function() {
+      var aSet, obj;
+      var count = 0;
 
-      var aSet = new Set([1,2,3]);
-      var count = 0, obj;
+      ignoreDeprecation(function() {
+        aSet = new Set([1,2,3]);
+      });
+
       while(count<10 && (obj = aSet.pop())) {
         equal(aSet.contains(obj), false, 'set should no longer contain object');
         count++;
@@ -41686,7 +42100,12 @@ define("ember-runtime/tests/system/set/extra_test",
     QUnit.module('Set aliases');
 
     test('method aliases', function() {
-      var aSet = new Set();
+      var aSet;
+
+      ignoreDeprecation(function() {
+        aSet = new Set();
+      });
+
       equal(aSet.add, aSet.addObject, 'add -> addObject');
       equal(aSet.remove, aSet.removeObject, 'remove -> removeObject');
       equal(aSet.addEach, aSet.addObjects, 'addEach -> addObjects');
@@ -42775,7 +43194,7 @@ define("ember-testing/tests/acceptance_test",
           });
 
           App.CommentsView = EmberView.extend({
-            defaultTemplate: EmberHandlebars.compile("{{input type=text}}")
+            defaultTemplate: EmberHandlebars.compile('{{input type="text"}}')
           });
 
           App.AbortTransitionRoute = EmberRoute.extend({
@@ -43331,8 +43750,8 @@ define("ember-testing/tests/helpers_test",
       if (expected === undefined) { expected = true; }
 
       function checkHelperPresent(helper, expected){
-        var presentInHelperContainer = !!helperContainer[helper],
-            presentInTestHelpers = !!application.testHelpers[helper];
+        var presentInHelperContainer = !!helperContainer[helper];
+        var presentInTestHelpers = !!application.testHelpers[helper];
 
         ok(presentInHelperContainer === expected, "Expected '" + helper + "' to be present in the helper container (defaults to window).");
         ok(presentInTestHelpers === expected, "Expected '" + helper + "' to be present in App.testHelpers.");
@@ -43980,6 +44399,37 @@ define("ember-testing/tests/helpers_test",
       });
     });
 
+
+    test("`fillIn` takes context into consideration", function() {
+      expect(2);
+      var fillIn, find, visit, andThen;
+
+      run(function() {
+        App = EmberApplication.create();
+        App.setupForTesting();
+      });
+
+      App.IndexView = EmberView.extend({
+        template: Ember.Handlebars.compile('<div id="parent">{{input type="text" id="first" class="current"}}</div>{{input type="text" id="second" class="current"}}')
+      });
+
+      App.injectTestHelpers();
+
+      run(App, App.advanceReadiness);
+
+      fillIn = App.testHelpers.fillIn;
+      find = App.testHelpers.find;
+      visit = App.testHelpers.visit;
+      andThen = App.testHelpers.andThen;
+
+      visit('/');
+      fillIn('.current', '#parent', 'current value');
+      andThen(function() {
+        equal(find('#first').val(), 'current value');
+        equal(find('#second').val(), '');
+      });
+    });
+
     QUnit.module("ember-testing async router", {
       setup: function(){
         cleanup();
@@ -44321,6 +44771,15 @@ define("ember-views/mixins/view_target_action_support.jshint",
     module('JSHint - ember-views/mixins');
     test('ember-views/mixins/view_target_action_support.js should pass jshint', function() { 
       ok(true, 'ember-views/mixins/view_target_action_support.js should pass jshint.'); 
+    });
+  });
+define("ember-views/system/action_manager.jshint",
+  [],
+  function() {
+    "use strict";
+    module('JSHint - ember-views/system');
+    test('ember-views/system/action_manager.js should pass jshint', function() { 
+      ok(true, 'ember-views/system/action_manager.js should pass jshint.'); 
     });
   });
 define("ember-views/system/event_dispatcher.jshint",
@@ -44739,8 +45198,8 @@ define("ember-views/tests/system/event_dispatcher_test",
 
       test("should not dispatch events to view event Manager when canDispatchToEventManager is false", function () {
 
-        var eventManagerCounter=0,
-            viewCounter=0;
+        var eventManagerCounter=0;
+        var viewCounter=0;
 
         run(function() {
           dispatcher.destroy();
@@ -44906,8 +45365,8 @@ define("ember-views/tests/system/jquery_ext_test",
     var view, dispatcher;
 
     // Adapted from https://github.com/jquery/jquery/blob/f30f7732e7775b6e417c4c22ced7adb2bf76bf89/test/data/testinit.js
-    var canDataTransfer,
-        fireNativeWithDataTransfer;
+    var canDataTransfer, fireNativeWithDataTransfer;
+
     if (document.createEvent) {
       canDataTransfer = !!document.createEvent('HTMLEvents').dataTransfer;
       fireNativeWithDataTransfer = function(node, type, dataTransfer) {
@@ -45308,7 +45767,7 @@ define("ember-views/tests/views/collection_test",
         content.insertAt(1, 'quux');
       });
 
-      equal(jQuery.trim(view.$(':nth-child(2)').text()), 'quux');
+      equal(trim(view.$(':nth-child(2)').text()), 'quux');
     });
 
     test("should remove an item from DOM when an item is removed from the content array", function() {
@@ -45367,7 +45826,7 @@ define("ember-views/tests/views/collection_test",
       });
 
       forEach(content, function(item, idx) {
-        equal(jQuery.trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update");
+        equal(trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update");
       });
     });
 
@@ -45398,7 +45857,7 @@ define("ember-views/tests/views/collection_test",
       });
 
       forEach(content, function(item, idx) {
-        equal(jQuery.trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update");
+        equal(trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update");
       });
 
     });
@@ -45430,7 +45889,7 @@ define("ember-views/tests/views/collection_test",
       });
 
       forEach(content, function(item, idx) {
-        equal(jQuery.trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update");
+        equal(trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update");
       });
     });
 
@@ -45463,7 +45922,7 @@ define("ember-views/tests/views/collection_test",
       });
 
       forEach(content, function(item, idx) {
-        equal(jQuery.trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update: "+item.name+"!="+view.$(fmt(':nth-child(%@)', [String(idx+1)])).text());
+        equal(trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update: "+item.name+"!="+view.$(fmt(':nth-child(%@)', [String(idx+1)])).text());
       });
     });
 
@@ -45497,7 +45956,7 @@ define("ember-views/tests/views/collection_test",
       });
 
       forEach(content, function(item, idx) {
-        equal(jQuery.trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update");
+        equal(trim(view.$(fmt(':nth-child(%@)', [String(idx+1)])).text()), item, "postcond - correct array update");
       });
     });
 
@@ -45518,12 +45977,12 @@ define("ember-views/tests/views/collection_test",
     });
 
     test("should fire life cycle events when elements are added and removed", function() {
-      var view,
-        didInsertElement = 0,
-        willDestroyElement = 0,
-        willDestroy = 0,
-        destroy = 0,
-        content = Ember.A([1, 2, 3]);
+      var view;
+      var didInsertElement = 0;
+      var willDestroyElement = 0;
+      var willDestroy = 0;
+      var destroy = 0;
+      var content = Ember.A([1, 2, 3]);
       run(function () {
         view = CollectionView.create({
           content: content,
@@ -45621,7 +46080,7 @@ define("ember-views/tests/views/collection_test",
         set(view, 'content', null);
       });
 
-      equal(jQuery.trim(view.$().children().text()), "(empty)", "should display empty view");
+      equal(trim(view.$().children().text()), "(empty)", "should display empty view");
     });
 
     test("should allow items to access to the CollectionView's current index in the content array", function() {
@@ -45644,15 +46103,16 @@ define("ember-views/tests/views/collection_test",
     });
 
     test("should allow declaration of itemViewClass as a string", function() {
-      Ember.lookup = {
-        "Ember": {
-          "View": View
+      var container = {
+        lookupFactory: function(){
+          return Ember.View.extend();
         }
       };
 
       view = CollectionView.create({
+        container: container,
         content: Ember.A([1, 2, 3]),
-        itemViewClass: 'Ember.View'
+        itemViewClass: 'simple-view'
       });
 
       run(function() {
@@ -46093,8 +46553,8 @@ define("ember-views/tests/views/component_test",
     test("Calling sendAction on a component with multiple parameters", function() {
       set(component, 'playing', "didStartPlaying");
 
-      var firstContext  = {song: 'She Broke My Ember'},
-          secondContext = {song: 'My Achey Breaky Ember'};
+      var firstContext  = {song: 'She Broke My Ember'};
+      var secondContext = {song: 'My Achey Breaky Ember'};
 
       component.sendAction('playing', firstContext, secondContext);
 
@@ -46158,7 +46618,7 @@ define("ember-views/tests/views/container_view_test",
 
       equal(view.container, container.container, 'view gains its containerViews container');
       equal(view._parentView, container, 'view\'s _parentView is the container');
-      equal(jQuery.trim(container.$().text()), "This is my moment");
+      equal(trim(container.$().text()), "This is my moment");
 
       run(function() {
         container.destroy();
@@ -46244,9 +46704,9 @@ define("ember-views/tests/views/container_view_test",
 
       equal(get(view, 'parentView'), container, "sets the parent view after the childView is appended");
 
-      var secondView = ViewKlass.create(),
-          thirdView = ViewKlass.create(),
-          fourthView = ViewKlass.create();
+      var secondView = ViewKlass.create();
+      var thirdView = ViewKlass.create();
+      var fourthView = ViewKlass.create();
 
       run(function() {
         container.pushObject(secondView);
@@ -46313,20 +46773,23 @@ define("ember-views/tests/views/container_view_test",
             }
           }));
         },
-        lengthSquared: computed(function () {
+        // functions here avoid attaching an observer, which is
+        // not supported.
+        lengthSquared: function () {
           return this.get('length') * this.get('length');
-        }).property('length'),
-
-        names: computed(function () {
-          return this.mapBy('name');
-        }).property('@each.name')
+        },
+        mapViewNames: function(){
+          return this.map(function(_view){
+            return _view.get('name');
+          });
+        }
       });
 
       container = Container.create();
 
-      equal(container.get('lengthSquared'), 4);
+      equal(container.lengthSquared(), 4);
 
-      deepEqual(container.get('names'), ['A','B']);
+      deepEqual(container.mapViewNames(), ['A','B']);
 
       run(container, 'appendTo', '#qunit-fixture');
 
@@ -46341,9 +46804,9 @@ define("ember-views/tests/views/container_view_test",
         }));
       });
 
-      equal(container.get('lengthSquared'), 9);
+      equal(container.lengthSquared(), 9);
 
-      deepEqual(container.get('names'), ['A','B','C']);
+      deepEqual(container.mapViewNames(), ['A','B','C']);
 
       equal(container.$().text(), 'ABC');
 
@@ -46407,7 +46870,7 @@ define("ember-views/tests/views/container_view_test",
         container.appendTo('#qunit-fixture');
       });
 
-      equal(jQuery.trim(container.$().text()), "This is the main view.", "should render its child");
+      equal(trim(container.$().text()), "This is the main view.", "should render its child");
       equal(get(container, 'length'), 1, "should have one child view");
       equal(container.objectAt(0), mainView, "should have the currentView as the only child view");
       equal(mainView.get('parentView'), container, "parentView is setup");
@@ -46603,7 +47066,7 @@ define("ember-views/tests/views/container_view_test",
       equal(container.objectAt(0), secondaryView, "should have the currentView as the only child view");
       equal(mainView.isDestroyed, true, 'should destroy the previous currentView: mainView.');
 
-      equal(jQuery.trim(container.$().text()), "This is the secondary view.", "should render its child");
+      equal(trim(container.$().text()), "This is the secondary view.", "should render its child");
 
       run(function() {
         set(container, 'currentView', tertiaryView);
@@ -46613,7 +47076,7 @@ define("ember-views/tests/views/container_view_test",
       equal(container.objectAt(0), tertiaryView, "should have the currentView as the only child view");
       equal(secondaryView.isDestroyed, true, 'should destroy the previous currentView: secondaryView.');
 
-      equal(jQuery.trim(container.$().text()), "This is the tertiary view.", "should render its child");
+      equal(trim(container.$().text()), "This is the tertiary view.", "should render its child");
     });
 
     test("should be able to modify childViews many times during an run loop", function () {
@@ -46675,7 +47138,7 @@ define("ember-views/tests/views/container_view_test",
     });
 
     test("should be able to modify childViews then destroy the ContainerView in same run loop", function () {
-        container = ContainerView.create();
+      container = ContainerView.create();
 
       run(function() {
         container.appendTo('#qunit-fixture');
@@ -46696,7 +47159,7 @@ define("ember-views/tests/views/container_view_test",
 
 
     test("should be able to modify childViews then rerender the ContainerView in same run loop", function () {
-        container = ContainerView.create();
+      container = ContainerView.create();
 
       run(function() {
         container.appendTo('#qunit-fixture');
@@ -46845,8 +47308,8 @@ define("ember-views/tests/views/container_view_test",
 
     test("if a containerView appends a child in its didInsertElement event, the didInsertElement event of the child view should be fired once", function () {
 
-      var counter = 0,
-          root = ContainerView.create({});
+      var counter = 0;
+      var root = ContainerView.create({});
 
       container = ContainerView.create({
 
@@ -46880,6 +47343,22 @@ define("ember-views/tests/views/container_view_test",
         root.destroy();
       });
 
+    });
+
+
+    test("ContainerView is observable [DEPRECATED]", function(){
+      container = ContainerView.create();
+      var observerFired = false;
+      expectDeprecation(function(){
+        container.addObserver('this.[]', function(){
+          observerFired = true;
+        });
+      }, /ContainerViews should not be observed as arrays. This behavior will change in future implementations of ContainerView./);
+
+      ok(!observerFired, 'Nothing changed, no observer fired');
+
+      container.pushObject(View.create());
+      ok(observerFired, 'View pushed, observer fired');
     });
   });
 define("ember-views/tests/views/container_view_test.jshint",
@@ -46997,19 +47476,6 @@ define("ember-views/tests/views/view/actions_test",
       }).create();
       view.send("poke");
     });
-
-    if (!Ember.FEATURES.isEnabled('ember-routing-drop-deprecated-action-style')) {
-      test("Action can be handled by a function on the view (DEPRECATED)", function() {
-        expect(2);
-        expectDeprecation(/Action handlers implemented directly on views are deprecated/);
-        view = View.extend({
-          poke: function() {
-            ok(true, 'poked');
-          }
-        }).create();
-        view.send("poke");
-      });
-    }
 
     test("A handled action can be bubbled to the target for continued processing", function() {
       expect(2);
@@ -48323,8 +48789,8 @@ define("ember-views/tests/views/view/create_child_view_test",
     });
 
     test("should create from string via container lookup", function() {
-      var ChildViewClass = EmberView.extend(),
-      fullName = 'view:bro';
+      var ChildViewClass = EmberView.extend();
+      var fullName = 'view:bro';
 
       view.container.lookupFactory = function(viewName) {
         equal(fullName, viewName);
@@ -48544,9 +49010,9 @@ define("ember-views/tests/views/view/destroy_test",
     QUnit.module("Ember.View#destroy");
 
     test("should teardown viewName on parentView when childView is destroyed", function() {
-      var viewName = "someChildView",
-          parentView = EmberView.create(),
-          childView = parentView.createChildView(EmberView, {viewName: viewName});
+      var viewName = "someChildView";
+      var parentView = EmberView.create();
+      var childView = parentView.createChildView(EmberView, {viewName: viewName});
 
       equal(get(parentView, viewName), childView, "Precond - child view was registered on parent");
 
@@ -49243,12 +49709,12 @@ define("ember-views/tests/views/view/nearest_of_type_test",
     });
 
     (function() {
-      var Mixin = EmberMixin.create({}),
-          Parent = View.extend(Mixin, {
-            render: function(buffer) {
-              this.appendChild( View.create() );
-            }
-          });
+      var Mixin = EmberMixin.create({});
+      var Parent = View.extend(Mixin, {
+        render: function(buffer) {
+          this.appendChild( View.create() );
+        }
+      });
 
       test("nearestOfType should find the closest view by view class", function() {
         var child;
@@ -50024,12 +50490,12 @@ define("ember-views/tests/views/view/template_test",
         toString: function() { return "Controller2"; }
       });
 
-      var controller1 = Controller1.create(),
-          controller2 = Controller2.create(),
-          optionsDataKeywordsControllerForView,
-          optionsDataKeywordsControllerForChildView,
-          contextForView,
-          contextForControllerlessView;
+      var controller1 = Controller1.create();
+      var controller2 = Controller2.create();
+      var optionsDataKeywordsControllerForView;
+      var optionsDataKeywordsControllerForChildView;
+      var contextForView;
+      var contextForControllerlessView;
 
       view = EmberView.create({
         controller: controller1,
@@ -51687,7 +52153,9 @@ define("ember/tests/helpers/link_to_test",
       equal(normalizeUrl(Ember.$('#item a', '#qunit-fixture').attr('href')), '/about');
     });
 
-    test("The {{link-to}} helper supports custom, nested, currentWhen", function() {
+    test("The {{link-to}} helper supports currentWhen (DEPRECATED)", function() {
+      expectDeprecation('Using currentWhen with {{link-to}} is deprecated in favor of `current-when`.');
+
       Router.map(function(match) {
         this.resource("index", { path: "/" }, function() {
           this.route("about");
@@ -51705,10 +52173,31 @@ define("ember/tests/helpers/link_to_test",
         router.handleURL("/about");
       });
 
-      equal(Ember.$('#other-link.active', '#qunit-fixture').length, 1, "The link is active since currentWhen is a parent route");
+      equal(Ember.$('#other-link.active', '#qunit-fixture').length, 1, "The link is active since current-when is a parent route");
     });
 
-    test("The {{link-to}} helper does not disregard currentWhen when it is given explicitly for a resource", function() {
+    test("The {{link-to}} helper supports custom, nested, current-when", function() {
+      Router.map(function(match) {
+        this.resource("index", { path: "/" }, function() {
+          this.route("about");
+        });
+
+        this.route("item");
+      });
+
+      Ember.TEMPLATES.index = Ember.Handlebars.compile("<h3>Home</h3>{{outlet}}");
+      Ember.TEMPLATES['index/about'] = Ember.Handlebars.compile("{{#link-to 'item' id='other-link' current-when='index'}}ITEM{{/link-to}}");
+
+      bootApplication();
+
+      Ember.run(function() {
+        router.handleURL("/about");
+      });
+
+      equal(Ember.$('#other-link.active', '#qunit-fixture').length, 1, "The link is active since current-when is a parent route");
+    });
+
+    test("The {{link-to}} helper does not disregard current-when when it is given explicitly for a resource", function() {
       Router.map(function(match) {
         this.resource("index", { path: "/" }, function() {
           this.route("about");
@@ -51720,7 +52209,7 @@ define("ember/tests/helpers/link_to_test",
       });
 
       Ember.TEMPLATES.index = Ember.Handlebars.compile("<h3>Home</h3>{{outlet}}");
-      Ember.TEMPLATES['index/about'] = Ember.Handlebars.compile("{{#link-to 'items' id='other-link' currentWhen='index'}}ITEM{{/link-to}}");
+      Ember.TEMPLATES['index/about'] = Ember.Handlebars.compile("{{#link-to 'items' id='other-link' current-when='index'}}ITEM{{/link-to}}");
 
       bootApplication();
 
@@ -51728,11 +52217,11 @@ define("ember/tests/helpers/link_to_test",
         router.handleURL("/about");
       });
 
-      equal(Ember.$('#other-link.active', '#qunit-fixture').length, 1, "The link is active when currentWhen is given for explicitly for a resource");
+      equal(Ember.$('#other-link.active', '#qunit-fixture').length, 1, "The link is active when current-when is given for explicitly for a resource");
     });
 
-    if (Ember.FEATURES.isEnabled("ember-routing-multi-current-when")) {
-      test("The {{link-to}} helper supports multiple currentWhen routes", function() {
+    
+      test("The {{link-to}} helper supports multiple current-when routes", function() {
         Router.map(function(match) {
           this.resource("index", { path: "/" }, function() {
             this.route("about");
@@ -51742,9 +52231,9 @@ define("ember/tests/helpers/link_to_test",
         });
 
         Ember.TEMPLATES.index = Ember.Handlebars.compile("<h3>Home</h3>{{outlet}}");
-        Ember.TEMPLATES['index/about'] = Ember.Handlebars.compile("{{#link-to 'item' id='link1' currentWhen='item|index'}}ITEM{{/link-to}}");
-        Ember.TEMPLATES['item'] = Ember.Handlebars.compile("{{#link-to 'item' id='link2' currentWhen='item|index'}}ITEM{{/link-to}}");
-        Ember.TEMPLATES['foo'] = Ember.Handlebars.compile("{{#link-to 'item' id='link3' currentWhen='item|index'}}ITEM{{/link-to}}");
+        Ember.TEMPLATES['index/about'] = Ember.Handlebars.compile("{{#link-to 'item' id='link1' current-when='item index'}}ITEM{{/link-to}}");
+        Ember.TEMPLATES['item'] = Ember.Handlebars.compile("{{#link-to 'item' id='link2' current-when='item index'}}ITEM{{/link-to}}");
+        Ember.TEMPLATES['foo'] = Ember.Handlebars.compile("{{#link-to 'item' id='link3' current-when='item index'}}ITEM{{/link-to}}");
 
         bootApplication();
 
@@ -51752,7 +52241,7 @@ define("ember/tests/helpers/link_to_test",
           router.handleURL("/about");
         });
 
-        equal(Ember.$('#link1.active', '#qunit-fixture').length, 1, "The link is active since currentWhen contains the parent route");
+        equal(Ember.$('#link1.active', '#qunit-fixture').length, 1, "The link is active since current-when contains the parent route");
 
         Ember.run(function() {
           router.handleURL("/item");
@@ -51764,9 +52253,9 @@ define("ember/tests/helpers/link_to_test",
           router.handleURL("/foo");
         });
 
-        equal(Ember.$('#link3.active', '#qunit-fixture').length, 0, "The link is not active since currentWhen does not contain the active route");
+        equal(Ember.$('#link3.active', '#qunit-fixture').length, 0, "The link is not active since current-when does not contain the active route");
       });
-    }
+    
 
     test("The {{link-to}} helper defaults to bubbling", function() {
       Ember.TEMPLATES.about = Ember.Handlebars.compile("<div {{action 'hide'}}>{{#link-to 'about.contact' id='about-contact'}}About{{/link-to}}</div>{{outlet}}");
@@ -51894,7 +52383,7 @@ define("ember/tests/helpers/link_to_test",
     });
 
     test("The {{link-to}} helper binds some anchor html tag common attributes", function() {
-      Ember.TEMPLATES.index = Ember.Handlebars.compile("<h3>Home</h3>{{#link-to 'index' id='self-link' title='title-attr' rel='rel-attr'}}Self{{/link-to}}");
+      Ember.TEMPLATES.index = Ember.Handlebars.compile("<h3>Home</h3>{{#link-to 'index' id='self-link' title='title-attr' rel='rel-attr' tabindex='-1'}}Self{{/link-to}}");
       bootApplication();
 
       Ember.run(function() {
@@ -51904,9 +52393,10 @@ define("ember/tests/helpers/link_to_test",
       var link = Ember.$('#self-link', '#qunit-fixture');
       equal(link.attr('title'), 'title-attr', "The self-link contains title attribute");
       equal(link.attr('rel'), 'rel-attr', "The self-link contains rel attribute");
+      equal(link.attr('tabindex'), '-1', "The self-link contains tabindex attribute");
     });
 
-    if(Ember.FEATURES.isEnabled('ember-routing-linkto-target-attribute')) {
+    
       test("The {{link-to}} helper supports `target` attribute", function() {
         Ember.TEMPLATES.index = Ember.Handlebars.compile("<h3>Home</h3>{{#link-to 'index' id='self-link' target='_blank'}}Self{{/link-to}}");
         bootApplication();
@@ -51946,7 +52436,27 @@ define("ember/tests/helpers/link_to_test",
 
         equal(event.isDefaultPrevented(), true, "should preventDefault when target attribute is `_self`");
       });
-    }
+
+      test("The {{link-to}} helper should not transition if target is not equal to _self or empty", function() {
+        Ember.TEMPLATES.index = Ember.Handlebars.compile("{{#linkTo 'about' id='about-link' replace=true target='_blank'}}About{{/linkTo}}");
+
+        Router.map(function() {
+          this.route("about");
+        });
+
+        bootApplication();
+
+        Ember.run(function() {
+          router.handleURL("/");
+        });
+
+        Ember.run(function() {
+          Ember.$('#about-link', '#qunit-fixture').click();
+        });
+
+        notEqual(container.lookup('controller:application').get('currentRouteName'), 'about', 'link-to should not transition if target is not equal to _self or empty');
+      });
+    
 
     test("The {{link-to}} helper accepts string/numeric arguments", function() {
       Router.map(function() {
@@ -52084,8 +52594,8 @@ define("ember/tests/helpers/link_to_test",
 
       assertEquality('/');
 
-      var controller = container.lookup('controller:index'),
-          view = Ember.View.views['index-view'];
+      var controller = container.lookup('controller:index');
+      var view = Ember.View.views['index-view'];
       Ember.run(function() {
         controller.set('foo', 'about');
         view.set('foo', 'about');
@@ -52134,9 +52644,9 @@ define("ember/tests/helpers/link_to_test",
         }
       }
 
-      var $contextLink = Ember.$('#context-link', '#qunit-fixture'),
-          $staticLink = Ember.$('#static-link', '#qunit-fixture'),
-          controller = container.lookup('controller:index');
+      var $contextLink = Ember.$('#context-link', '#qunit-fixture');
+      var $staticLink = Ember.$('#static-link', '#qunit-fixture');
+      var controller = container.lookup('controller:index');
 
       assertLinkStatus($contextLink);
       assertLinkStatus($staticLink);
@@ -52187,8 +52697,8 @@ define("ember/tests/helpers/link_to_test",
         this.route('post', { path: '/posts/:post_id' });
       });
 
-      var post = Ember.Object.create({id: '1'}),
-          secondPost = Ember.Object.create({id: '2'});
+      var post = Ember.Object.create({id: '1'});
+      var secondPost = Ember.Object.create({id: '2'});
 
       Ember.TEMPLATES.index = compile('{{#link-to "post" post id="post"}}post{{/link-to}}');
 
@@ -52217,8 +52727,8 @@ define("ember/tests/helpers/link_to_test",
         this.route('post', { path: '/posts/:post_id' });
       });
 
-      var post = Ember.Object.create({id: '1'}),
-          secondPost = Ember.Object.create({id: '2'});
+      var post = Ember.Object.create({id: '1'});
+      var secondPost = Ember.Object.create({id: '2'});
 
       Ember.TEMPLATES = {
         index: compile(' '),
@@ -52474,8 +52984,8 @@ define("ember/tests/helpers/link_to_test",
 
       assertEquality('/');
 
-      var controller = container.lookup('controller:index'),
-      view = Ember.View.views['index-view'];
+      var controller = container.lookup('controller:index');
+      var view = Ember.View.views['index-view'];
       Ember.run(function() {
         controller.set('foo', 'about');
         view.set('foo', 'about');
@@ -52879,7 +53389,7 @@ define("ember/tests/helpers/link_to_test",
           // we should also be able to gracefully handle these cases.
           router.handleURL("/search/results?search=same&sort=title&showDetails=true");
         });
-        shouldBeActive('#same-sort-child-only');
+        //shouldBeActive('#same-sort-child-only');
         shouldBeActive('#same-search-parent-only');
         shouldNotBeActive('#change-search-parent-only');
         shouldBeActive('#same-search-same-sort-child-and-parent');
@@ -52946,6 +53456,7 @@ define("ember/tests/helpers/link_to_test",
         Ember.TEMPLATES.application = Ember.Handlebars.compile(
             "{{#link-to 'parent' id='parent-link'}}Parent{{/link-to}} " +
             "{{#link-to 'parent.child' id='parent-child-link'}}Child{{/link-to}} " +
+            "{{#link-to 'parent' (query-params foo=cat) id='parent-link-qp'}}Parent{{/link-to}} " +
             "{{outlet}}"
             );
 
@@ -52957,19 +53468,21 @@ define("ember/tests/helpers/link_to_test",
         bootApplication();
         shouldNotBeActive('#parent-link');
         shouldNotBeActive('#parent-child-link');
+        shouldNotBeActive('#parent-link-qp');
         Ember.run(router, 'handleURL', '/parent/child?foo=dog');
         shouldBeActive('#parent-link');
+        shouldNotBeActive('#parent-link-qp');
       });
 
-      test("The {{link-to}} helper disregards query-params in activeness computation when currentWhen specified", function() {
+      test("The {{link-to}} helper disregards query-params in activeness computation when current-when specified", function() {
         App.Router.map(function() {
           this.route('parent');
         });
 
         Ember.TEMPLATES.application = Ember.Handlebars.compile(
-            "{{#link-to 'parent' (query-params page=1) currentWhen='parent' id='app-link'}}Parent{{/link-to}} {{outlet}}");
+            "{{#link-to 'parent' (query-params page=1) current-when='parent' id='app-link'}}Parent{{/link-to}} {{outlet}}");
         Ember.TEMPLATES.parent = Ember.Handlebars.compile(
-            "{{#link-to 'parent' (query-params page=1) currentWhen='parent' id='parent-link'}}Parent{{/link-to}} {{outlet}}");
+            "{{#link-to 'parent' (query-params page=1) current-when='parent' id='parent-link'}}Parent{{/link-to}} {{outlet}}");
 
         App.ParentController = Ember.ObjectController.extend({
           queryParams: ['page'],
@@ -53304,12 +53817,13 @@ define("ember/tests/location_test.jshint",
     });
   });
 define("ember/tests/routing/basic_test",
-  ["ember","ember-metal/enumerable_utils","ember-metal/property_get","ember-metal/property_set"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__) {
+  ["ember","ember-metal/enumerable_utils","ember-metal/property_get","ember-metal/property_set","ember-views/system/action_manager"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__) {
     "use strict";
     var forEach = __dependency2__.forEach;
     var get = __dependency3__.get;
     var set = __dependency4__.set;
+    var ActionManager = __dependency5__["default"];
 
     var Router, App, AppView, templates, router, container, originalLoggerError;
     var compile = Ember.Handlebars.compile;
@@ -54473,7 +54987,7 @@ define("ember/tests/routing/basic_test",
       bootApplication();
 
       var actionId = Ember.$("#qunit-fixture a").data("ember-action");
-      var action = Ember.Handlebars.ActionHelper.registeredActions[actionId];
+      var action = ActionManager.registeredActions[actionId];
       var event = new Ember.$.Event("click");
       action.handler(event);
     });
@@ -54507,7 +55021,7 @@ define("ember/tests/routing/basic_test",
       bootApplication();
 
       var actionId = Ember.$("#qunit-fixture a").data("ember-action");
-      var action = Ember.Handlebars.ActionHelper.registeredActions[actionId];
+      var action = ActionManager.registeredActions[actionId];
       var event = new Ember.$.Event("click");
       action.handler(event);
     });
@@ -54545,7 +55059,7 @@ define("ember/tests/routing/basic_test",
       bootApplication();
 
       var actionId = Ember.$("#qunit-fixture a").data("ember-action");
-      var action = Ember.Handlebars.ActionHelper.registeredActions[actionId];
+      var action = ActionManager.registeredActions[actionId];
       var event = new Ember.$.Event("click");
       action.handler(event);
     });
@@ -54580,7 +55094,7 @@ define("ember/tests/routing/basic_test",
       bootApplication();
 
       var actionId = Ember.$("#qunit-fixture a").data("ember-action");
-      var action = Ember.Handlebars.ActionHelper.registeredActions[actionId];
+      var action = ActionManager.registeredActions[actionId];
       var event = new Ember.$.Event("click");
       action.handler(event);
     });
@@ -54619,7 +55133,7 @@ define("ember/tests/routing/basic_test",
       bootApplication();
 
       var actionId = Ember.$("#qunit-fixture a").data("ember-action");
-      var action = Ember.Handlebars.ActionHelper.registeredActions[actionId];
+      var action = ActionManager.registeredActions[actionId];
       var event = new Ember.$.Event("click");
       action.handler(event);
     });
@@ -54663,94 +55177,48 @@ define("ember/tests/routing/basic_test",
       router.send("baz");
     });
 
-    if (Ember.FEATURES.isEnabled('ember-routing-drop-deprecated-action-style')) {
-      asyncTest("Actions are not triggered on the controller if a matching action name is implemented as a method", function() {
-        Router.map(function() {
-          this.route("home", { path: "/" });
-        });
-
-        var model = { name: "Tom Dale" };
-        var stateIsNotCalled = true;
-
-        App.HomeRoute = Ember.Route.extend({
-          model: function() {
-            return model;
-          },
-
-          actions: {
-            showStuff: function(context) {
-              ok (stateIsNotCalled, "an event on the state is not triggered");
-              deepEqual(context, { name: "Tom Dale" }, "an event with context is passed");
-              QUnit.start();
-            }
-          }
-        });
-
-        Ember.TEMPLATES.home = Ember.Handlebars.compile(
-          "<a {{action 'showStuff' model}}>{{name}}</a>"
-        );
-
-        var controller = Ember.Controller.extend({
-          showStuff: function(context) {
-            stateIsNotCalled = false;
-            ok (stateIsNotCalled, "an event on the state is not triggered");
-          }
-        });
-
-        container.register('controller:home', controller);
-
-        bootApplication();
-
-        var actionId = Ember.$("#qunit-fixture a").data("ember-action");
-        var action = Ember.Handlebars.ActionHelper.registeredActions[actionId];
-        var event = new Ember.$.Event("click");
-        action.handler(event);
+    asyncTest("Actions are not triggered on the controller if a matching action name is implemented as a method", function() {
+      Router.map(function() {
+        this.route("home", { path: "/" });
       });
-    } else {
-      asyncTest("Events are triggered on the controller if a matching action name is implemented as a method (DEPRECATED)", function() {
-        Router.map(function() {
-          this.route("home", { path: "/" });
-        });
 
-        var model = { name: "Tom Dale" };
-        var stateIsNotCalled = true;
+      var model = { name: "Tom Dale" };
+      var stateIsNotCalled = true;
 
-        App.HomeRoute = Ember.Route.extend({
-          model: function() {
-            return model;
-          },
+      App.HomeRoute = Ember.Route.extend({
+        model: function() {
+          return model;
+        },
 
-          events: {
-            showStuff: function(obj) {
-              stateIsNotCalled = false;
-              ok (stateIsNotCalled, "an event on the state is not triggered");
-            }
-          }
-        });
-
-        Ember.TEMPLATES.home = Ember.Handlebars.compile(
-          "<a {{action 'showStuff' model}}>{{name}}</a>"
-        );
-
-        var controller = Ember.Controller.extend({
+        actions: {
           showStuff: function(context) {
             ok (stateIsNotCalled, "an event on the state is not triggered");
             deepEqual(context, { name: "Tom Dale" }, "an event with context is passed");
             QUnit.start();
           }
-        });
-
-        container.register('controller:home', controller);
-
-        expectDeprecation(/Action handlers contained in an `events` object are deprecated/);
-        bootApplication();
-
-        var actionId = Ember.$("#qunit-fixture a").data("ember-action");
-        var action = Ember.Handlebars.ActionHelper.registeredActions[actionId];
-        var event = new Ember.$.Event("click");
-        action.handler(event);
+        }
       });
-    }
+
+      Ember.TEMPLATES.home = Ember.Handlebars.compile(
+        "<a {{action 'showStuff' model}}>{{name}}</a>"
+      );
+
+      var controller = Ember.Controller.extend({
+        showStuff: function(context) {
+          stateIsNotCalled = false;
+          ok (stateIsNotCalled, "an event on the state is not triggered");
+        }
+      });
+
+      container.register('controller:home', controller);
+
+      bootApplication();
+
+      var actionId = Ember.$("#qunit-fixture a").data("ember-action");
+      var action = ActionManager.registeredActions[actionId];
+      var event = new Ember.$.Event("click");
+      action.handler(event);
+    });
 
     asyncTest("actions can be triggered with multiple arguments", function() {
       Router.map(function() {
@@ -54759,8 +55227,8 @@ define("ember/tests/routing/basic_test",
         });
       });
 
-      var model1 = { name: "Tilde" },
-          model2 = { name: "Tom Dale" };
+      var model1 = { name: "Tilde" };
+      var model2 = { name: "Tom Dale" };
 
       App.RootRoute = Ember.Route.extend({
         actions: {
@@ -54786,7 +55254,7 @@ define("ember/tests/routing/basic_test",
       bootApplication();
 
       var actionId = Ember.$("#qunit-fixture a").data("ember-action");
-      var action = Ember.Handlebars.ActionHelper.registeredActions[actionId];
+      var action = ActionManager.registeredActions[actionId];
       var event = new Ember.$.Event("click");
       action.handler(event);
     });
@@ -54842,8 +55310,8 @@ define("ember/tests/routing/basic_test",
     });
 
     test("using replaceWith calls location.replaceURL if available", function() {
-      var setCount = 0,
-          replaceCount = 0;
+      var setCount = 0;
+      var replaceCount = 0;
 
       Router.reopen({
         location: Ember.NoneLocation.createWithMixins({
@@ -55365,8 +55833,8 @@ define("ember/tests/routing/basic_test",
 
 
     test("Parent route context change", function() {
-      var editCount = 0,
-          editedPostIds = Ember.A();
+      var editCount = 0;
+      var editedPostIds = Ember.A();
 
       Ember.TEMPLATES.application = compile("{{outlet}}");
       Ember.TEMPLATES.posts = compile("{{outlet}}");
@@ -55435,10 +55903,9 @@ define("ember/tests/routing/basic_test",
     });
 
     test("Router accounts for rootURL on page load when using history location", function() {
-      var rootURL = window.location.pathname + '/app',
-          postsTemplateRendered = false,
-          setHistory,
-          HistoryTestLocation;
+      var rootURL = window.location.pathname + '/app';
+      var postsTemplateRendered = false;
+      var setHistory, HistoryTestLocation;
 
       setHistory = function(obj, path) {
         obj.set('history', { state: { path: path } });
@@ -55491,8 +55958,8 @@ define("ember/tests/routing/basic_test",
 
     test("The rootURL is passed properly to the location implementation", function() {
       expect(1);
-      var rootURL = "/blahzorz",
-          HistoryTestLocation;
+      var rootURL = "/blahzorz";
+      var HistoryTestLocation;
 
       HistoryTestLocation = Ember.HistoryLocation.extend({
         rootURL: 'this is not the URL you are looking for',
@@ -56397,8 +56864,8 @@ define("ember/tests/routing/basic_test",
     });
 
     test("rejecting the model hooks promise with a non-error prints the `message` property", function() {
-      var rejectedMessage = 'OMG!! SOOOOOO BAD!!!!',
-          rejectedStack   = 'Yeah, buddy: stack gets printed too.';
+      var rejectedMessage = 'OMG!! SOOOOOO BAD!!!!';
+      var rejectedStack   = 'Yeah, buddy: stack gets printed too.';
 
       Router.map(function() {
         this.route("yippie", { path: "/" });
@@ -56438,8 +56905,8 @@ define("ember/tests/routing/basic_test",
     });
 
     test("rejecting the model hooks promise with a string shows a good error", function() {
-      var originalLoggerError = Ember.Logger.error,
-          rejectedMessage = "Supercalifragilisticexpialidocious";
+      var originalLoggerError = Ember.Logger.error;
+      var rejectedMessage = "Supercalifragilisticexpialidocious";
 
       Router.map(function() {
         this.route("yondo", { path: "/" });
@@ -56633,12 +57100,14 @@ define("ember/tests/routing/basic_test.jshint",
     });
   });
 define("ember/tests/routing/query_params_test",
-  ["ember","ember-metal/enumerable_utils","ember-metal/platform"],
-  function(__dependency1__, __dependency2__, __dependency3__) {
+  ["ember","ember-metal/enumerable_utils","ember-metal/computed","ember-metal/platform","ember-runtime/system/string"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__) {
     "use strict";
     var forEach = __dependency2__.forEach;
     var map = __dependency2__.map;
-    var platform = __dependency3__.platform;
+    var computed = __dependency3__.computed;
+    var platform = __dependency4__.platform;
+    var capitalize = __dependency5__.capitalize;
 
     var Router, App, AppView, templates, router, container;
     var get = Ember.get;
@@ -56856,6 +57325,27 @@ define("ember/tests/routing/query_params_test",
         bootApplication();
       });
 
+      test("Can override inherited QP behavior by specifying queryParams as a computed property", function() {
+        expect(0);
+        var SharedMixin = Ember.Mixin.create({
+          queryParams: ['a'],
+          a: 0
+        });
+
+        App.IndexController = Ember.Controller.extend(SharedMixin, {
+          queryParams: computed(function() {
+            return ['c'];
+          }),
+          c: true
+        });
+
+        bootApplication();
+        var indexController = container.lookup('controller:index');
+
+        expectedReplaceURL = "not gonna happen";
+        Ember.run(indexController, 'set', 'a', 1);
+      });
+
       test("model hooks receives query params", function() {
         App.IndexController = Ember.Controller.extend({
           queryParams: ['omg'],
@@ -56887,9 +57377,9 @@ define("ember/tests/routing/query_params_test",
         Ember.TEMPLATES.about = compile("<h3>{{link-to 'Home' 'home'  (query-params foo='naw')}}</h3>");
         Ember.TEMPLATES['cats/index'] = compile("<h3>{{link-to 'Cats' 'cats'  (query-params name='domino') id='cats-link'}}</h3>");
 
-        var homeShouldBeCreated = false,
-            aboutShouldBeCreated = false,
-            catsIndexShouldBeCreated = false;
+        var homeShouldBeCreated = false;
+        var aboutShouldBeCreated = false;
+        var catsIndexShouldBeCreated = false;
 
         App.HomeRoute = Ember.Route.extend({
           setup: function() {
@@ -57002,6 +57492,24 @@ define("ember/tests/routing/query_params_test",
         });
 
         startingURL = "/omg";
+        bootApplication();
+      });
+
+      test("Route#paramsFor fetches falsy query params", function() {
+        expect(1);
+
+        App.IndexController = Ember.Controller.extend({
+          queryParams: ['foo'],
+          foo: true
+        });
+
+        App.IndexRoute = Ember.Route.extend({
+          model: function(params, transition) {
+            equal(params.foo, false);
+          }
+        });
+
+        startingURL = "/?foo=false";
         bootApplication();
       });
 
@@ -57766,6 +58274,45 @@ define("ember/tests/routing/query_params_test",
         equal(get(controller, 'foo'), undefined);
       });
 
+      test("query params have been set by the time setupController is called", function() {
+        expect(1);
+
+        App.ApplicationController = Ember.Controller.extend({
+          queryParams: ['foo'],
+          foo: "wat"
+        });
+
+        App.ApplicationRoute = Ember.Route.extend({
+          setupController: function(controller) {
+            equal(controller.get('foo'), 'YEAH', "controller's foo QP property set before setupController called");
+          }
+        });
+
+        startingURL = '/?foo=YEAH';
+        bootApplication();
+      });
+
+      var testParamlessLinks = function(routeName) {
+        test("param-less links in an app booted with query params in the URL don't reset the query params: " + routeName, function() {
+          expect(1);
+
+          Ember.TEMPLATES[routeName] = compile("{{link-to 'index' 'index' id='index-link'}}");
+
+          App[capitalize(routeName) + "Controller"] = Ember.Controller.extend({
+            queryParams: ['foo'],
+            foo: "wat"
+          });
+
+          startingURL = '/?foo=YEAH';
+          bootApplication();
+
+          equal(Ember.$('#index-link').attr('href'), '/?foo=YEAH');
+        });
+      };
+
+      testParamlessLinks('application');
+      testParamlessLinks('index');
+
       QUnit.module("Model Dep Query Params", {
         setup: function() {
           sharedSetup();
@@ -58044,6 +58591,13 @@ define("ember/tests/routing/query_params_test",
         equal(Ember.$('#two').attr('href'), "/a/a-2/comments");
       });
 
+      test("can unit test without bucket cache", function() {
+        var controller = container.lookup('controller:article');
+        controller._bucketCache = null;
+
+        controller.set('q', "i used to break");
+        equal(controller.get('q'), "i used to break");
+      });
 
       QUnit.module("Query Params - overlapping query param property names", {
         setup: function() {
@@ -58288,8 +58842,8 @@ define("ember/tests/routing/substates_test",
 
       expect(7);
 
-      var grandmaDeferred = Ember.RSVP.defer(),
-      sallyDeferred = Ember.RSVP.defer();
+      var grandmaDeferred = Ember.RSVP.defer();
+      var sallyDeferred = Ember.RSVP.defer();
 
       Router.map(function() {
         this.resource('grandma', function() {
@@ -58504,8 +59058,8 @@ define("ember/tests/routing/substates_test",
 
       delete templates.loading;
 
-      var sallyDeferred = Ember.RSVP.defer(),
-      smellsDeferred = Ember.RSVP.defer();
+      var sallyDeferred = Ember.RSVP.defer();
+      var smellsDeferred = Ember.RSVP.defer();
 
       var shouldBubbleToApplication = true;
 
