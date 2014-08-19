@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.8.0-beta.1+metal-views.aef8ed9b
+ * @version   1.8.0-beta.1+metal-views.74b7c44e
  */
 
 (function() {
@@ -9890,8 +9890,10 @@ define("ember-metal-views/renderer",
       var total = 1;
       var levelBase = _parentView ? _parentView._level+1 : 0;
 
-      // if root view && view has a _morph assigned or _parentView._elementInserted
-      var willInsert = _parentView == null ? !!_view._morph : _parentView._elementInserted;
+      var root = _parentView == null ? _view : _parentView._root;
+
+      // if root view has a _morph assigned
+      var willInsert = !!root._morph;
 
       var queue = this._queue;
       queue[0] = 0;
@@ -9912,6 +9914,7 @@ define("ember-metal-views/renderer",
           // ensure props we add are in same order
           view._morph = null;
         }
+        view._root = root;
         this.uuid(view);
         view._level = levelBase + level;
         if (view._elementCreated) {
@@ -12827,7 +12830,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.8.0-beta.1+metal-views.aef8ed9b
+      @version 1.8.0-beta.1+metal-views.74b7c44e
     */
 
     if ('undefined' === typeof Ember) {
@@ -12854,10 +12857,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.8.0-beta.1+metal-views.aef8ed9b'
+      @default '1.8.0-beta.1+metal-views.74b7c44e'
       @static
     */
-    Ember.VERSION = '1.8.0-beta.1+metal-views.aef8ed9b';
+    Ember.VERSION = '1.8.0-beta.1+metal-views.74b7c44e';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`
@@ -14008,7 +14011,8 @@ define("ember-metal/instrumentation",
       @namespace Ember
       @static
     */
-    var subscribers = [], cache = {};
+    var subscribers = [];
+    __exports__.subscribers = subscribers;var cache = {};
 
     var populateListeners = function(name) {
       var listeners = [], subscriber;
@@ -14042,56 +14046,70 @@ define("ember-metal/instrumentation",
       @param {Function} callback Function that you're instrumenting.
       @param {Object} binding Context that instrument function is called with.
     */
-    function instrument(name, payload, callback, binding) {
-      var listeners = cache[name], timeName, ret;
-
-      // ES6TODO: Docs. What is this?
-      if (Ember.STRUCTURED_PROFILE) {
-        timeName = name + ": " + payload.object;
-        console.time(timeName);
+    function instrument(name, _payload, callback, binding) {
+      if (subscribers.length === 0) {
+        return;
       }
+      var payload = _payload || {};
+      var finalizer = _instrumentStart(name, function () {
+        return payload;
+      });
+      if (finalizer) {
+        var tryable = function _instrumenTryable() {
+          return callback.call(binding);
+        };
+        var catchable = function _instrumentCatchable(e) {
+          payload.exception = e;
+        };
+        return tryCatchFinally(tryable, catchable, finalizer);
+      }
+    }
+
+    __exports__.instrument = instrument;// private for now
+    function _instrumentStart(name, _payload) {
+      var listeners = cache[name];
 
       if (!listeners) {
         listeners = populateListeners(name);
       }
 
       if (listeners.length === 0) {
-        ret = callback.call(binding);
-        if (Ember.STRUCTURED_PROFILE) { console.timeEnd(timeName); }
-        return ret;
+        return;
       }
 
-      var beforeValues = [], listener, i, l;
+      var payload = _payload();
 
-      function tryable() {
+      var STRUCTURED_PROFILE = Ember.STRUCTURED_PROFILE;
+      var timeName;
+      if (STRUCTURED_PROFILE) {
+        timeName = name + ": " + payload.object;
+        console.time(timeName);
+      }
+
+      var l = listeners.length;
+      var beforeValues = new Array(l);
+      var i, listener;
+      var timestamp = time();
+      for (i=0; i<l; i++) {
+        listener = listeners[i];
+        beforeValues[i] = listener.before(name, timestamp, payload);
+      }
+
+      return function _instrumentEnd() {
+        var i, l, listener;
+        var timestamp = time();
         for (i=0, l=listeners.length; i<l; i++) {
           listener = listeners[i];
-          beforeValues[i] = listener.before(name, time(), payload);
+          listener.after(name, timestamp, payload, beforeValues[i]);
         }
 
-        return callback.call(binding);
-      }
-
-      function catchable(e) {
-        payload = payload || {};
-        payload.exception = e;
-      }
-
-      function finalizer() {
-        for (i=0, l=listeners.length; i<l; i++) {
-          listener = listeners[i];
-          listener.after(name, time(), payload, beforeValues[i]);
-        }
-
-        if (Ember.STRUCTURED_PROFILE) {
+        if (STRUCTURED_PROFILE) {
           console.timeEnd(timeName);
         }
-      }
-
-      return tryCatchFinally(tryable, catchable, finalizer);
+      };
     }
 
-    __exports__.instrument = instrument;/**
+    __exports__._instrumentStart = _instrumentStart;/**
       Subscribes to a particular event or instrumented block of code.
 
       @method subscribe
@@ -14157,7 +14175,7 @@ define("ember-metal/instrumentation",
       @namespace Ember.Instrumentation
     */
     function reset() {
-      subscribers = [];
+      subscribers.length = 0;
       cache = {};
     }
 
@@ -37875,14 +37893,16 @@ define("ember-views/system/render_buffer",
     };
   });
 define("ember-views/system/renderer",
-  ["ember-metal-views/renderer","ember-metal/platform","ember-views/system/render_buffer","ember-metal/run_loop","ember-metal/property_set","exports"],
-  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __exports__) {
+  ["ember-metal-views/renderer","ember-metal/platform","ember-views/system/render_buffer","ember-metal/run_loop","ember-metal/property_set","ember-metal/instrumentation","exports"],
+  function(__dependency1__, __dependency2__, __dependency3__, __dependency4__, __dependency5__, __dependency6__, __exports__) {
     "use strict";
     var Renderer = __dependency1__["default"];
     var create = __dependency2__.create;
     var renderBuffer = __dependency3__["default"];
     var run = __dependency4__["default"];
     var set = __dependency5__.set;
+    var _instrumentStart = __dependency6__._instrumentStart;
+    var subscribers = __dependency6__.subscribers;
 
     function EmberRenderer() {
       Renderer.call(this);
@@ -37994,6 +38014,13 @@ define("ember-views/system/renderer",
     };
 
     Renderer.prototype.willCreateElement = function (view) {
+      if (subscribers.length) {
+        view._instrumentEnd = _instrumentStart('render.'+view.instrumentName, function viewInstrumentDetails() {
+          var details = {};
+          view.instrumentDetails(details);
+          return details;
+        });
+      }
       if (view._transitionTo) {
         view._transitionTo('inBuffer');
       }
@@ -38001,6 +38028,9 @@ define("ember-views/system/renderer",
     Renderer.prototype.didCreateElement = function (view) {
       if (view._transitionTo) {
         view._transitionTo('hasElement');
+      }
+      if (view._instrumentEnd) {
+        view._instrumentEnd();
       }
     }; // hasElement
     Renderer.prototype.willInsertElement = function (view) {
@@ -39406,33 +39436,6 @@ define("ember-views/views/core_view",
       },
 
       /**
-        Invoked by the view system when this view needs to produce an HTML
-        representation. This method will create a new render buffer, if needed,
-        then apply any default attributes, such as class names and visibility.
-        Finally, the `render()` method is invoked, which is responsible for
-        doing the bulk of the rendering.
-
-        You should not need to override this method; instead, implement the
-        `template` property, or if you need more control, override the `render`
-        method.
-
-        @method renderToBuffer
-        @param {Ember.RenderBuffer} buffer the render buffer. If no buffer is
-          passed, a default buffer, using the current view's `tagName`, will
-          be used.
-        @private
-      */
-      renderToBuffer: function() {
-        // TODO bring back instrumentation
-        return this._renderToBuffer();
-      },
-
-      _renderToBuffer: function() {
-        this.constructor.renderer.renderTree(this);
-        return this.buffer;
-      },
-
-      /**
         Override the default event firing from `Ember.Evented` to
         also call methods with the given name.
 
@@ -39613,13 +39616,6 @@ define("ember-views/views/states/destroying",
       },
       destroyElement: function() {
         throw new EmberError(fmt(destroyingError, ['destroyElement']));
-      },
-      empty: function() {
-        throw new EmberError(fmt(destroyingError, ['empty']));
-      },
-
-      setElement: function() {
-        throw new EmberError(fmt(destroyingError, ["set('element', ...)"]));
       }
     });
 
@@ -39659,19 +39655,12 @@ define("ember-views/views/states/has_element",
         return jQuery("#" + get(view, 'elementId'))[0];
       },
 
-      setElement: function(view, value) {
-        if (value === null) {
-          view._transitionTo('preRender');
-        } else {
-          throw new EmberError("You cannot set an element to a non-null value when the element is already in the DOM.");
-        }
-
-        return value;
-      },
-
       // once the view has been inserted into the DOM, rerendering is
       // deferred to allow bindings to synchronize.
       rerender: function(view) {
+        if (view._root._morph && !view._elementInserted) {
+          throw new EmberError("Something you did caused a view to re-render after it rendered but before it was inserted into the DOM.");
+        }
         // TODO: should be scheduled with renderer
         run.scheduleOnce('render', function () {
           if (view.isDestroying) return;
@@ -39750,8 +39739,6 @@ define("ember-views/views/states/in_buffer",
         childView = view.createChildView(childView, options);
         if (!_childViews.length) { _childViews = view._childViews = _childViews.slice(); }
         _childViews.push(childView);
-
-        //childView.renderToBuffer(buffer); // done later on the render loop
 
         if (!childView._morph) {
           buffer.pushChildView(childView);
@@ -39845,17 +39832,6 @@ define("ember-views/views/states/pre_render",
         return this.contains(element);
       };
     }
-
-    merge(preRender, {
-      empty: Ember.K,
-
-      setElement: function(view, value) {
-        if (value !== null) {
-          view._transitionTo('hasElement');
-        }
-        return value;
-      }
-    });
 
     __exports__["default"] = preRender;
   });
@@ -41286,11 +41262,9 @@ define("ember-views/views/view",
         @return {Ember.View} receiver
       */
       createElement: function() {
-        if (get(this, 'element')) { return this; }
+        if (this.element) { return this; }
 
-        var element = this.constructor.renderer.renderTree(this);
-
-        set(this, 'element', element);
+        this.constructor.renderer.renderTree(this);
 
         return this;
       },
@@ -41366,14 +41340,6 @@ define("ember-views/views/view",
       instrumentDetails: function(hash) {
         hash.template = get(this, 'templateName');
         this._super(hash);
-      },
-
-      _renderToBuffer: function(buffer) {
-        this.lengthBeforeRender = this._childViews.length;
-        this._super(buffer);
-        this.lengthAfterRender = this._childViews.length;
-
-        return buffer;
       },
 
       beforeRender: function(buffer) {},
