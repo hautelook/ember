@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.7.1+pre.c1ec09ad
+ * @version   1.7.1+pre.f095a455
  */
 
 (function() {
@@ -5222,14 +5222,16 @@ define("ember-handlebars/controls",
           inputType = _resolveOption(this, options, 'type'),
           onEvent = hash.on;
 
-      delete hash.type;
-      delete hash.on;
-
       if (inputType === 'checkbox') {
+        delete hash.type;
+        delete types.type;
+
         Ember.assert("{{input type='checkbox'}} does not support setting `value=someBooleanValue`; you must use `checked=someBooleanValue` instead.", options.hashTypes.value !== 'ID');
+
         return helpers.view.call(this, Checkbox, options);
       } else {
-        if (inputType) { hash.type = inputType; }
+        delete hash.on;
+
         hash.onEvent = onEvent || 'enter';
         return helpers.view.call(this, TextField, options);
       }
@@ -13001,7 +13003,7 @@ define("ember-metal/core",
 
       @class Ember
       @static
-      @version 1.7.1+pre.c1ec09ad
+      @version 1.7.1+pre.f095a455
     */
 
     if ('undefined' === typeof Ember) {
@@ -13028,10 +13030,10 @@ define("ember-metal/core",
     /**
       @property VERSION
       @type String
-      @default '1.7.1+pre.c1ec09ad'
+      @default '1.7.1+pre.f095a455'
       @static
     */
-    Ember.VERSION = '1.7.1+pre.c1ec09ad';
+    Ember.VERSION = '1.7.1+pre.f095a455';
 
     /**
       Standard environmental variables. You can define these in a global `EmberENV`

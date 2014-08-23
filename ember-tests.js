@@ -5,7 +5,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   1.7.1+pre.c1ec09ad
+ * @version   1.7.1+pre.f095a455
  */
 
 (function() {
@@ -5079,6 +5079,29 @@ define("ember-handlebars/tests/controls/text_field_test",
 
     test("input tabindex is updated when setting tabindex property of view", function() {
       equal(textField.$('input').attr('tabindex'), "5", "renders text field with the tabindex");
+    });
+
+    QUnit.module("{{input type='text'}} - dynamic type", {
+      setup: function() {
+        controller = {
+          someProperty: 'password'
+        };
+
+        textField = View.extend({
+          controller: controller,
+          template: compile('{{input type=someProperty}}')
+        }).create();
+
+        append();
+      },
+
+      teardown: function() {
+        destroy(textField);
+      }
+    });
+
+    test("should insert a text field into DOM", function() {
+      equal(textField.$('input').attr('type'), 'password', "a bound property can be used to determine type.");
     });
 
     QUnit.module("{{input}} - default type", {
