@@ -7453,7 +7453,7 @@ define("ember-metal/utils",
     var agent = window.navigator.userAgent;
 
     var mayNeedFix = (agent.indexOf('iPhone') > -1 || agent.indexOf('iPad') > -1 ) &&
-      agent.indexOf('Version/8.0 Mobile') > -1 &&
+      agent.indexOf('OS 8') > -1 &&
       ({ '__proto__': []} instanceof Array);
 
     function meta(obj, writable) {
